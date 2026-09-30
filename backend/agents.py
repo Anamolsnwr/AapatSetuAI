@@ -58,67 +58,68 @@ def monitor_changes(
 
     changes = []
 
-    plan_assignments = current_plan[
-        "plan"
-    ]
+    # ========================================================
+    # 1. CHECK RESOURCE AVAILABILITY
+    # ========================================================
 
-    # --------------------------------------------------------
-    # RESOURCE AVAILABILITY
-    # --------------------------------------------------------
+    for assignment in current_plan.get("plan", []):
 
-    for assignment in plan_assignments:
-
-        resource_id = assignment[
+        resource_id = assignment.get(
             "resource_id"
-        ]
+        )
 
         if resource_id is None:
             continue
 
-        for resource in resources:
-
-            if resource["id"] == resource_id:
-
-                if resource["status"] != "available":
-
-                    changes.append({
-
-                        "type":
-                            "Resource Unavailable",
-
-                        "resource_id":
-                            resource_id,
-
-                        "incident_id":
-                            assignment["incident_id"],
-
-                        "reason":
-                            (
-                                f"{resource_id} "
-                                f"assigned to "
-                                f"{assignment['incident_id']} "
-                                f"is unavailable."
-                            ),
-
-                        "action":
-                            "Re-plan required"
-                    })
-
-    # --------------------------------------------------------
-    # NEW INCIDENTS
-    # --------------------------------------------------------
-
-    planned_incident_ids = set()
-
-    for assignment in plan_assignments:
-
-        planned_incident_ids.add(
-            assignment["incident_id"]
+        resource = next(
+            (
+                r for r in resources
+                if r["id"] == resource_id
+            ),
+            None
         )
+
+        if resource is not None:
+
+            if resource["status"] != "available":
+
+                changes.append({
+
+                    "type":
+                        "Resource Unavailable",
+
+                    "resource_id":
+                        resource_id,
+
+                    "incident_id":
+                        assignment["incident_id"],
+
+                    "reason":
+                        f"{resource_id} is no longer available.",
+
+                    "action":
+                        "Re-planning required"
+                })
+
+
+    # ========================================================
+    # 2. CHECK FOR NEW INCIDENTS
+    # ========================================================
+
+    planned_incidents = {
+        assignment["incident_id"]
+        for assignment in current_plan.get(
+            "plan",
+            []
+        )
+    }
 
     for incident in incidents:
 
-        if incident["id"] not in planned_incident_ids:
+        if (
+            incident["id"]
+            not in planned_incidents
+        ):
 
             changes.append({
 
@@ -128,28 +129,25 @@ def monitor_changes(
                 "incident_id":
                     incident["id"],
 
-                "severity":
-                    incident["severity"],
-
                 "reason":
-                    (
-                        f"New "
-                        f"{incident['severity']} "
-                        f"incident detected in "
-                        f"{incident['location']}."
-                    ),
+                    f"New emergency detected: "
+                    f"{incident['type']}",
 
                 "action":
-                    "Re-plan required"
+                    "Re-planning required"
             })
 
-    # --------------------------------------------------------
-    # SEVERITY CHANGES
-    # --------------------------------------------------------
+
+    # ========================================================
+    # 3. CHECK SEVERITY CHANGES
+    # ========================================================
 
     for incident in incidents:
 
-        for assignment in plan_assignments:
+        for assignment in current_plan.get(
+            "plan",
+            []
+        ):
 
             if (
                 assignment["incident_id"]
@@ -157,18 +155,10 @@ def monitor_changes(
                 incident["id"]
             ):
 
-                planned_severity = assignment[
-                    "severity"
-                ]
-
-                current_severity = incident[
-                    "severity"
-                ]
-
                 if (
-                    planned_severity
+                    assignment["severity"]
                     !=
-                    current_severity
+                    incident["severity"]
                 ):
 
                     changes.append({
@@ -180,76 +170,32 @@ def monitor_changes(
                             incident["id"],
 
                         "old_severity":
-                            planned_severity,
+                            assignment["severity"],
 
                         "new_severity":
-                            current_severity,
+                            incident["severity"],
 
                         "reason":
-                            (
-                                f"{incident['id']} "
-                                f"severity changed "
-                                f"from "
-                                f"{planned_severity} "
-                                f"to "
-                                f"{current_severity}."
-                            ),
+                            f"Severity changed from "
+                            f"{assignment['severity']} "
+                            f"to "
+                            f"{incident['severity']}.",
 
                         "action":
-                            "Re-plan required"
+                            "Re-planning required"
                     })
 
-                break
 
-    # --------------------------------------------------------
-    # HUMAN APPROVAL
-    # --------------------------------------------------------
+    # ========================================================
+    # IMPORTANT:
+    # HUMAN APPROVAL IS NOT A CHANGE
+    # ========================================================
 
-    if (
-        current_plan["status"]
-        ==
-        "Pending Approval"
-    ):
+    # Do NOT add "Human Approval Pending"
+    # to the changes list.
+    #
+    # Human approval is a workflow state,
+    # not a reason to generate another plan.
 
-        changes.append({
-
-            "type":
-                "Human Approval Pending",
-
-            "reason":
-                (
-                    "Response plan is waiting "
-                    "for human approval."
-                ),
-
-            "action":
-                "Human review required"
-        })
-
-    # --------------------------------------------------------
-    # OUTDATED PLAN
-    # --------------------------------------------------------
-
-    if (
-        current_plan["status"]
-        ==
-        "Outdated"
-    ):
-
-        changes.append({
-
-            "type":
-                "Plan Outdated",
-
-            "reason":
-                (
-                    "The current response plan "
-                    "is outdated because the "
-                    "emergency situation changed."
-                ),
-
-            "action":
-                "Generate a new plan"
-        })
 
     return changes
