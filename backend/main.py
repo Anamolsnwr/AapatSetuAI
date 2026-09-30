@@ -13,7 +13,13 @@ from backend.agents import (
 from backend.security import validate_incident
 from backend.ai_agent import generate_explanation
 
-
+from backend.multi_agent import (
+    assessment_agent,
+    planning_agent,
+    security_agent,
+    monitoring_agent,
+    replanning_agent
+)
 # ============================================================
 # PATHS
 # ============================================================
