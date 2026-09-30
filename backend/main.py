@@ -633,16 +633,12 @@ def monitor():
 @app.post("/simulate/new-emergency")
 def new_emergency():
 
-    # --------------------------------------------------------
-    # Check if I005 already exists
-    # --------------------------------------------------------
-
+    # Check whether I005 already exists
     for incident in incidents:
 
         if incident["id"] == "I005":
 
             return {
-
                 "message":
                     "Factory Fire Emergency already exists",
 
@@ -650,11 +646,7 @@ def new_emergency():
                     incident
             }
 
-
-    # --------------------------------------------------------
-    # Create new incident
-    # --------------------------------------------------------
-
+    # Create new emergency
     new_incident = {
 
         "id":
@@ -679,16 +671,12 @@ def new_emergency():
             "Active"
     }
 
-
+    # Add the emergency
     incidents.append(
         new_incident
     )
 
-
-    # --------------------------------------------------------
-    # Mark current plan outdated
-    # --------------------------------------------------------
-
+    # Mark current plan as outdated
     if plan_history:
 
         current_plan = plan_history[-1]
@@ -700,22 +688,15 @@ def new_emergency():
 
             current_plan["status"] = "Outdated"
 
-
-    # --------------------------------------------------------
-    # Audit
-    # --------------------------------------------------------
-
+    # Add audit log
     add_audit_log(
-
         "New Emergency",
-
         (
             "New Critical emergency "
             "I005 - Factory Fire Emergency "
             "was detected."
         )
     )
-
 
     return {
 
