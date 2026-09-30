@@ -48,7 +48,9 @@ from backend.multi_agent import (
     planning_agent,
     security_agent,
     monitoring_agent,
-    replanning_agent
+    replanning_agent,
+    human_review_agent,
+    command_coordinator
 )
 
 
@@ -1313,17 +1315,12 @@ def explain_change():
 # MULTI-AGENT STATUS
 # ============================================================
 
+# ============================================================
+# MULTI-AGENT STATUS
+# ============================================================
+
 @app.get("/agents/status")
 def get_agent_status():
-
-    # --------------------------------------------------------
-    # ASSESSMENT AGENT
-    # --------------------------------------------------------
-
-    assessed = assessment_agent(
-        incidents
-    )
-
 
     # --------------------------------------------------------
     # CURRENT PLAN
@@ -1341,17 +1338,25 @@ def get_agent_status():
 
 
     # --------------------------------------------------------
-    # PLANNING AGENT
+    # 1. ASSESSMENT AGENT
+    # --------------------------------------------------------
+
+    assessed = assessment_agent(
+        incidents
+    )
+
+
+    # --------------------------------------------------------
+    # 2. PLANNING AGENT
     # --------------------------------------------------------
 
     planning = planning_agent(
-
         current_plan["plan"]
     )
 
 
     # --------------------------------------------------------
-    # SECURITY AGENT
+    # 3. SECURITY / SISO AGENT
     # --------------------------------------------------------
 
     security_audit = run_security_audit(
@@ -1365,13 +1370,21 @@ def get_agent_status():
 
 
     security = security_agent(
-
         security_audit
     )
 
 
     # --------------------------------------------------------
-    # MONITORING AGENT
+    # 4. HUMAN REVIEW
+    # --------------------------------------------------------
+
+    human_review = human_review_agent(
+        current_plan
+    )
+
+
+    # --------------------------------------------------------
+    # 5. MONITORING AGENT
     # --------------------------------------------------------
 
     changes = monitor_changes(
@@ -1390,7 +1403,7 @@ def get_agent_status():
 
 
     # --------------------------------------------------------
-    # RE-PLANNING AGENT
+    # 6. RE-PLANNING AGENT
     # --------------------------------------------------------
 
     replanning = None
@@ -1412,6 +1425,26 @@ def get_agent_status():
 
 
     # --------------------------------------------------------
+    # 7. COMMAND COORDINATOR
+    # --------------------------------------------------------
+
+    coordinator = command_coordinator(
+
+        assessed,
+
+        planning,
+
+        security,
+
+        human_review,
+
+        monitoring,
+
+        replanning
+    )
+
+
+    # --------------------------------------------------------
     # AGENT LIST
     # --------------------------------------------------------
 
@@ -1422,6 +1455,8 @@ def get_agent_status():
         planning,
 
         security,
+
+        human_review,
 
         monitoring
 
@@ -1435,15 +1470,35 @@ def get_agent_status():
         )
 
 
+    agents.append(
+        coordinator
+    )
+
+
+    # --------------------------------------------------------
+    # FINAL RESPONSE
+    # --------------------------------------------------------
+
     return {
 
         "system":
             "AapatSetu AI",
 
-        "agents":
-            agents
-    }
+        "plan_version":
+            current_plan["version"],
 
+        "plan_status":
+            current_plan["status"],
+
+        "workflow_status":
+            coordinator["status"],
+
+        "agents":
+            agents,
+
+        "workflow":
+            coordinator["workflow"]
+    }
 
 # ============================================================
 # RESET SIMULATION
