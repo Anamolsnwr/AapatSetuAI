@@ -10,7 +10,10 @@ from backend.agents import (
     assess_all_incidents,
     monitor_changes
 )
-from backend.security import validate_incident
+from backend.security import (
+    validate_incident,
+    run_security_audit
+)
 from backend.ai_agent import generate_explanation
 
 from backend.multi_agent import (
@@ -313,7 +316,18 @@ def approve_plan():
 @app.get("/agents/status")
 def get_agent_status():
 
-    assessed = assessment_agent(incidents)
+    # ========================================================
+    # 1. ASSESSMENT AGENT
+    # ========================================================
+
+    assessed = assessment_agent(
+        incidents
+    )
+
+
+    # ========================================================
+    # 2. PLANNING AGENT
+    # ========================================================
 
     current_plan = create_plan()
 
@@ -321,29 +335,94 @@ def get_agent_status():
         current_plan["plan"]
     )
 
-    security = security_agent(
-        current_plan["validation"]
+
+    # ========================================================
+    # 3. SECURITY / SISO AGENT
+    # ========================================================
+
+    security_audit = run_security_audit(
+
+        incidents,
+
+        resources,
+
+        current_plan["plan"]
     )
 
+
+    security = security_agent(
+        security_audit
+    )
+
+
+    # ========================================================
+    # 4. MONITORING AGENT
+    # ========================================================
+
     changes = monitor_changes(
+
         incidents,
+
         resources,
+
         current_plan
     )
+
 
     monitoring = monitoring_agent(
         changes
     )
 
+
+    # ========================================================
+    # 5. RE-PLANNING AGENT
+    # ========================================================
+
+    replanning = None
+
+
+    if changes:
+
+        # Find the first actual emergency change
+        reason = changes[0]["reason"]
+
+        replanning = replanning_agent(
+            reason
+        )
+
+
+    # ========================================================
+    # FINAL MULTI-AGENT RESPONSE
+    # ========================================================
+
+    agents = [
+
+        assessed,
+
+        planning,
+
+        security,
+
+        monitoring
+    ]
+
+
+    if replanning is not None:
+
+        agents.append(
+            replanning
+        )
+
+
     return {
-        "system": "AapatSetu AI",
-        "agents": [
-            assessed,
-            planning,
-            security,
-            monitoring
-        ]
+
+        "system":
+            "AapatSetu AI",
+
+        "agents":
+            agents
     }
+
 # ============================================================
 # REJECT PLAN
 # ============================================================

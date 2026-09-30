@@ -2,8 +2,9 @@
 # backend/agents.py
 # ============================================================
 
+
 # ============================================================
-# INCIDENT ASSESSMENT
+# INCIDENT ASSESSMENT AGENT
 # ============================================================
 
 def assess_incident(incident):
@@ -46,7 +47,7 @@ def assess_all_incidents(incidents):
 
 
 # ============================================================
-# MONITOR AGENT
+# MONITORING AGENT
 # ============================================================
 
 def monitor_changes(
@@ -62,7 +63,7 @@ def monitor_changes(
     ]
 
     # --------------------------------------------------------
-    # Resource availability
+    # RESOURCE AVAILABILITY
     # --------------------------------------------------------
 
     for assignment in plan_assignments:
@@ -104,7 +105,7 @@ def monitor_changes(
                     })
 
     # --------------------------------------------------------
-    # New incidents
+    # NEW INCIDENTS
     # --------------------------------------------------------
 
     planned_incident_ids = set()
@@ -143,7 +144,7 @@ def monitor_changes(
             })
 
     # --------------------------------------------------------
-    # Severity changes
+    # SEVERITY CHANGES
     # --------------------------------------------------------
 
     for incident in incidents:
@@ -201,7 +202,7 @@ def monitor_changes(
                 break
 
     # --------------------------------------------------------
-    # Human approval
+    # HUMAN APPROVAL
     # --------------------------------------------------------
 
     if (
@@ -226,7 +227,7 @@ def monitor_changes(
         })
 
     # --------------------------------------------------------
-    # Outdated plan
+    # OUTDATED PLAN
     # --------------------------------------------------------
 
     if (
