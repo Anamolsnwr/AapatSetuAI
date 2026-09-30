@@ -1277,3 +1277,332 @@ button.danger {
     color: #0f172a;
     font-size: 14px;
 }
+
+/* =========================================
+   PHASE 9.2
+   RESPONSE PLAN VISUAL IMPROVEMENTS
+========================================= */
+
+.plan-version {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    padding: 5px 10px;
+
+    border-radius: 8px;
+
+    background: #2563eb;
+
+    color: white;
+
+    font-size: 13px;
+
+    font-weight: 700;
+}
+
+
+/* PLAN STATUS */
+
+.plan-status {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    padding: 5px 10px;
+
+    border-radius: 8px;
+
+    font-size: 13px;
+
+    font-weight: 700;
+}
+
+
+.plan-status.active {
+
+    background: #dcfce7;
+
+    color: #166534;
+}
+
+
+.plan-status.pending {
+
+    background: #fef3c7;
+
+    color: #92400e;
+}
+
+
+.plan-status.outdated {
+
+    background: #fee2e2;
+
+    color: #991b1b;
+}
+
+
+.plan-status.rejected {
+
+    background: #e5e7eb;
+
+    color: #374151;
+}
+
+
+/* PLAN SUMMARY */
+
+.plan-summary {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fit, minmax(150px, 1fr));
+
+    gap: 12px;
+
+    margin-bottom: 18px;
+}
+
+
+.plan-summary-card {
+
+    padding: 14px;
+
+    border-radius: 10px;
+
+    background: #f8fafc;
+
+    border: 1px solid #e2e8f0;
+}
+
+
+.plan-summary-card span {
+
+    display: block;
+
+    font-size: 12px;
+
+    color: #64748b;
+
+    margin-bottom: 5px;
+}
+
+
+.plan-summary-card strong {
+
+    font-size: 18px;
+
+    color: #0f172a;
+}
+
+
+/* ASSIGNMENT CARD */
+
+.plan-assignment {
+
+    padding: 16px;
+
+    margin-bottom: 12px;
+
+    border-radius: 12px;
+
+    border: 1px solid #e2e8f0;
+
+    background: white;
+
+    transition: 0.2s;
+}
+
+
+.plan-assignment:hover {
+
+    border-color: #94a3b8;
+}
+
+
+/* HUMAN ATTENTION */
+
+.plan-assignment.attention {
+
+    border-left: 5px solid #ef4444;
+
+    background: #fff7f7;
+}
+
+
+.plan-assignment.assigned {
+
+    border-left: 5px solid #22c55e;
+}
+
+
+/* ASSIGNMENT HEADER */
+
+.plan-assignment-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 10px;
+
+    flex-wrap: wrap;
+
+    margin-bottom: 10px;
+}
+
+
+.plan-resource {
+
+    font-size: 17px;
+
+    font-weight: 700;
+
+    color: #0f172a;
+}
+
+
+.plan-assignment-status {
+
+    padding: 5px 9px;
+
+    border-radius: 7px;
+
+    font-size: 12px;
+
+    font-weight: 700;
+}
+
+
+.plan-assignment-status.assigned {
+
+    background: #dcfce7;
+
+    color: #166534;
+}
+
+
+.plan-assignment-status.attention {
+
+    background: #fee2e2;
+
+    color: #991b1b;
+}
+
+
+/* INCIDENT INFORMATION */
+
+.plan-incident {
+
+    font-size: 14px;
+
+    color: #334155;
+
+    margin-bottom: 5px;
+}
+
+
+.plan-location {
+
+    font-size: 13px;
+
+    color: #64748b;
+}
+
+
+/* REASON */
+
+.plan-reason {
+
+    margin-top: 12px;
+
+    padding: 10px;
+
+    border-radius: 8px;
+
+    background: #f8fafc;
+
+    font-size: 13px;
+
+    color: #475569;
+
+    line-height: 1.5;
+}
+
+
+.plan-reason strong {
+
+    color: #0f172a;
+}
+
+
+/* SEVERITY */
+
+.plan-severity {
+
+    display: inline-block;
+
+    margin-top: 8px;
+
+    padding: 4px 8px;
+
+    border-radius: 6px;
+
+    font-size: 11px;
+
+    font-weight: 700;
+}
+
+
+.plan-severity.critical {
+
+    background: #fee2e2;
+
+    color: #991b1b;
+}
+
+
+.plan-severity.high {
+
+    background: #ffedd5;
+
+    color: #9a3412;
+}
+
+
+.plan-severity.medium {
+
+    background: #fef3c7;
+
+    color: #92400e;
+}
+
+
+.plan-severity.low {
+
+    background: #dcfce7;
+
+    color: #166534;
+}
+
+
+/* EMPTY PLAN */
+
+.plan-empty {
+
+    padding: 20px;
+
+    text-align: center;
+
+    color: #64748b;
+
+    background: #f8fafc;
+
+    border-radius: 10px;
+}
