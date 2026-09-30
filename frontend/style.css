@@ -1246,3 +1246,24 @@ button.danger {
     }
 
 }
+
+.human-approval-plan {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+}
+
+.human-approval-plan span {
+    color: #64748b;
+    font-size: 12px;
+}
+
+.human-approval-plan strong {
+    color: #0f172a;
+    font-size: 14px;
+}
