@@ -1204,6 +1204,8 @@ async function loadAgents() {
 
                 step: "1",
 
+                title: "Assess",
+
                 description:
                     "Analyzes emergency incidents and identifies their requirements."
             },
@@ -1214,6 +1216,8 @@ async function loadAgents() {
                 icon: "📋",
 
                 step: "2",
+
+                title: "Allocate",
 
                 description:
                     "Allocates available resources according to incident priority."
@@ -1226,6 +1230,8 @@ async function loadAgents() {
 
                 step: "3",
 
+                title: "Validate",
+
                 description:
                     "Validates incidents, resources and the response plan."
             },
@@ -1236,6 +1242,8 @@ async function loadAgents() {
                 icon: "👁️",
 
                 step: "4",
+
+                title: "Monitor",
 
                 description:
                     "Continuously checks for changes in the emergency situation."
@@ -1248,11 +1256,59 @@ async function loadAgents() {
 
                 step: "5",
 
+                title: "Re-plan",
+
                 description:
                     "Generates a new response plan when a significant change occurs."
             }
 
         };
+
+
+        // ==================================================
+        // STATUS CLASS
+        // ==================================================
+
+        function getStatusClass(
+            status
+        ) {
+
+            if (
+                status === "Passed" ||
+                status === "Completed"
+            ) {
+
+                return "agent-success";
+            }
+
+
+            if (
+                status === "Warning" ||
+                status === "Change Detected"
+            ) {
+
+                return "agent-warning";
+            }
+
+
+            if (
+                status === "Triggered"
+            ) {
+
+                return "agent-triggered";
+            }
+
+
+            if (
+                status === "Monitoring"
+            ) {
+
+                return "agent-monitoring";
+            }
+
+
+            return "agent-normal";
+        }
 
 
         // ==================================================
@@ -1271,8 +1327,9 @@ async function loadAgents() {
                 "agent-connector";
 
 
-            connector.innerHTML =
-                "↓";
+            connector.innerHTML = `
+                <span>↓</span>
+            `;
 
 
             container.appendChild(
@@ -1285,7 +1342,10 @@ async function loadAgents() {
         // CREATE AGENT CARD
         // ==================================================
 
-        function createAgentCard(agent) {
+        function createAgentCard(
+            agent,
+            index
+        ) {
 
             const info =
                 agentInfo[
@@ -1294,47 +1354,22 @@ async function loadAgents() {
 
                     icon: "🤖",
 
-                    step: "",
+                    step:
+                        String(
+                            index + 1
+                        ),
+
+                    title: "Process",
 
                     description:
                         "Emergency response agent."
                 };
 
 
-            let statusClass =
-                "agent-normal";
-
-
-            if (
-                agent.status === "Passed" ||
-                agent.status === "Completed"
-            ) {
-
-                statusClass =
-                    "agent-success";
-
-            } else if (
-                agent.status === "Warning" ||
-                agent.status === "Change Detected"
-            ) {
-
-                statusClass =
-                    "agent-warning";
-
-            } else if (
-                agent.status === "Triggered"
-            ) {
-
-                statusClass =
-                    "agent-triggered";
-
-            } else if (
-                agent.status === "Monitoring"
-            ) {
-
-                statusClass =
-                    "agent-monitoring";
-            }
+            const statusClass =
+                getStatusClass(
+                    agent.status
+                );
 
 
             const card =
@@ -1353,19 +1388,28 @@ async function loadAgents() {
                     ${info.step}
                 </div>
 
+
                 <div class="agent-icon">
                     ${info.icon}
                 </div>
 
+
                 <div class="agent-info">
+
+                    <div class="agent-title">
+                        ${info.title}
+                    </div>
+
 
                     <h3>
                         ${agent.agent}
                     </h3>
 
+
                     <p class="agent-description">
                         ${info.description}
                     </p>
+
 
                     <span class="agent-status">
                         ${agent.status}
@@ -1390,7 +1434,8 @@ async function loadAgents() {
             (agent, index) => {
 
                 createAgentCard(
-                    agent
+                    agent,
+                    index
                 );
 
 
@@ -1425,21 +1470,14 @@ async function loadAgents() {
 
 
                     let approvalStatus =
-                        "Human-in-the-Loop";
+                        "Pending Human Approval";
+
+
+                    let approvalClass =
+                        "pending";
 
 
                     if (
-                        planStatus ===
-                        "Pending Approval"
-                    ) {
-
-                        approvalIcon =
-                            "👤";
-
-                        approvalStatus =
-                            "Pending Human Approval";
-
-                    } else if (
                         planStatus ===
                         "Active"
                     ) {
@@ -1449,6 +1487,9 @@ async function loadAgents() {
 
                         approvalStatus =
                             "Plan Active";
+
+                        approvalClass =
+                            "active";
 
                     } else if (
                         planStatus ===
@@ -1461,6 +1502,9 @@ async function loadAgents() {
                         approvalStatus =
                             "Plan Rejected";
 
+                        approvalClass =
+                            "rejected";
+
                     } else if (
                         planStatus ===
                         "Outdated"
@@ -1471,28 +1515,50 @@ async function loadAgents() {
 
                         approvalStatus =
                             "Plan Outdated";
+
+                        approvalClass =
+                            "outdated";
                     }
 
 
                     humanStage.innerHTML = `
 
-                        <div class="human-approval-icon">
+                        <div
+                            class="
+                                human-approval-icon
+                                ${approvalClass}
+                            "
+                        >
                             ${approvalIcon}
                         </div>
 
-                        <div class="human-approval-content">
 
-                            <strong>
-                                Human Approval
-                            </strong>
+                        <div
+                            class="
+                                human-approval-content
+                            "
+                        >
+
+                            <div
+                                class="
+                                    human-stage-title
+                                "
+                            >
+                                👤 Human Approval
+                            </div>
+
 
                             <p>
-                                The response plan must
-                                be reviewed by a human
-                                before activation.
+                                Human review is required
+                                before activating a response plan.
                             </p>
 
-                            <div class="human-approval-plan">
+
+                            <div
+                                class="
+                                    human-approval-plan
+                                "
+                            >
 
                                 <span>
                                     Current Plan
@@ -1504,7 +1570,12 @@ async function loadAgents() {
 
                             </div>
 
-                            <div class="human-approval-plan">
+
+                            <div
+                                class="
+                                    human-approval-plan
+                                "
+                            >
 
                                 <span>
                                     Plan Status
@@ -1516,7 +1587,13 @@ async function loadAgents() {
 
                             </div>
 
-                            <span class="human-approval-status">
+
+                            <span
+                                class="
+                                    human-approval-status
+                                    ${approvalClass}
+                                "
+                            >
                                 ${approvalStatus}
                             </span>
 
@@ -1530,15 +1607,18 @@ async function loadAgents() {
                     );
 
 
-                    if (
-                        index <
-                        data.agents.length - 1
-                    ) {
+                    addConnector();
 
-                        addConnector();
-                    }
 
-                } else if (
+                    return;
+                }
+
+
+                // ------------------------------------------
+                // NORMAL AGENT CONNECTOR
+                // ------------------------------------------
+
+                if (
                     index <
                     data.agents.length - 1
                 ) {
@@ -1558,11 +1638,19 @@ async function loadAgents() {
 
             let html = `
 
-                <strong>
-                    🤖 Multi-Agent Activity
-                </strong>
+                <div class="agent-details-title">
 
-                <br><br>
+                    🤖 Multi-Agent Activity
+
+                </div>
+
+
+                <p class="agent-details-subtitle">
+
+                    Current status of the emergency
+                    response workflow.
+
+                </p>
 
             `;
 
@@ -1578,25 +1666,45 @@ async function loadAgents() {
 
                     html += `
 
-                        <div class="agent-detail-row">
+                        <div
+                            class="
+                                agent-detail-row
+                            "
+                        >
 
                             <div>
 
                                 <strong>
-                                    ${info.icon || "🤖"}
+
+                                    ${
+                                        info.icon ||
+                                        "🤖"
+                                    }
+
                                     ${agent.agent}
+
                                 </strong>
+
 
                                 <br>
 
+
                                 <span>
-                                    ${info.description || ""}
+
+                                    ${
+                                        info.description ||
+                                        ""
+                                    }
+
                                 </span>
 
                             </div>
 
+
                             <strong>
+
                                 ${agent.status}
+
                             </strong>
 
                         </div>
@@ -1612,7 +1720,12 @@ async function loadAgents() {
 
             html += `
 
-                <div class="agent-detail-row human-detail-row">
+                <div
+                    class="
+                        agent-detail-row
+                        human-detail-row
+                    "
+                >
 
                     <div>
 
@@ -1628,6 +1741,7 @@ async function loadAgents() {
                         </span>
 
                     </div>
+
 
                     <strong>
                         ${currentPlan.status}
@@ -1728,11 +1842,8 @@ async function loadAll() {
 
     try {
 
-        // Check backend first
         await checkSystemStatus();
 
-
-        // Load dashboard data
         await loadIncidents();
 
         await loadResources();
@@ -1837,10 +1948,6 @@ function connectButtons() {
         );
 
 
-    // ------------------------------------------------------
-    // APPROVE
-    // ------------------------------------------------------
-
     if (approveButton) {
 
         approveButton.addEventListener(
@@ -1849,10 +1956,6 @@ function connectButtons() {
         );
     }
 
-
-    // ------------------------------------------------------
-    // REJECT
-    // ------------------------------------------------------
 
     if (rejectButton) {
 
@@ -1863,10 +1966,6 @@ function connectButtons() {
     }
 
 
-    // ------------------------------------------------------
-    // REPLAN
-    // ------------------------------------------------------
-
     if (replanButton) {
 
         replanButton.addEventListener(
@@ -1875,10 +1974,6 @@ function connectButtons() {
         );
     }
 
-
-    // ------------------------------------------------------
-    // AI ANALYSIS
-    // ------------------------------------------------------
 
     if (aiButton) {
 
@@ -1889,10 +1984,6 @@ function connectButtons() {
     }
 
 
-    // ------------------------------------------------------
-    // NEW EMERGENCY
-    // ------------------------------------------------------
-
     if (newEmergencyButton) {
 
         newEmergencyButton.addEventListener(
@@ -1901,10 +1992,6 @@ function connectButtons() {
         );
     }
 
-
-    // ------------------------------------------------------
-    // RESOURCE FAILURE
-    // ------------------------------------------------------
 
     if (resourceFailureButton) {
 
@@ -1915,10 +2002,6 @@ function connectButtons() {
     }
 
 
-    // ------------------------------------------------------
-    // SEVERITY
-    // ------------------------------------------------------
-
     if (severityButton) {
 
         severityButton.addEventListener(
@@ -1927,10 +2010,6 @@ function connectButtons() {
         );
     }
 
-
-    // ------------------------------------------------------
-    // RESET
-    // ------------------------------------------------------
 
     if (resetButton) {
 
