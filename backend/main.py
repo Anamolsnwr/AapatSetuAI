@@ -716,26 +716,27 @@ def resource_failure():
 
         if resource["id"] == "A2":
 
-            if resource["status"] == "unavailable":
+            if resource["status"] != "available":
 
                 return {
-
                     "message":
-                        "Ambulance A2 is already unavailable",
+                        "A2 is already unavailable",
 
                     "resource":
                         resource
                 }
 
+            resource["status"] = "unavailable"
 
-            resource["status"] = \
-                "unavailable"
+            add_audit_log(
+                "Resource Failure",
+                (
+                    "Ambulance A2 became unavailable. "
+                    "Re-planning may be required."
+                )
+            )
 
-
-            # ------------------------------------------------
-            # Mark current plan outdated
-            # ------------------------------------------------
-
+            # Mark current plan as outdated
             if plan_history:
 
                 current_plan = plan_history[-1]
@@ -745,33 +746,21 @@ def resource_failure():
                     "Active"
                 ]:
 
-                    current_plan["status"] = \
-                        "Outdated"
-
-
-            add_audit_log(
-                "Resource Failure",
-                "Ambulance A2 became unavailable."
-            )
-
+                    current_plan["status"] = "Outdated"
 
             return {
 
                 "message":
-                    "Ambulance A2 is unavailable",
+                    "Resource failure detected: A2 is unavailable",
 
                 "resource":
-                    resource,
-
-                "plan_status":
-                    plan_history[-1]["status"]
+                    resource
             }
 
 
     return {
-
         "message":
-            "A2 not found"
+            "Resource A2 was not found."
     }
 
 
