@@ -310,6 +310,43 @@ def approve_plan():
 
     }
 
+@app.get("/agents/status")
+def get_agent_status():
+
+    assessed = assessment_agent(incidents)
+
+    current_plan = create_plan(
+        incidents,
+        resources
+    )
+
+    planning = planning_agent(
+        current_plan["plan"]
+    )
+
+    security = security_agent(
+        current_plan["validation"]
+    )
+
+    changes = monitor_changes(
+        incidents,
+        resources,
+        current_plan
+    )
+
+    monitoring = monitoring_agent(
+        changes
+    )
+
+    return {
+        "system": "AapatSetu AI",
+        "agents": [
+            assessed,
+            planning,
+            security,
+            monitoring
+        ]
+    }
 
 # ============================================================
 # REJECT PLAN
