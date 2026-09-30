@@ -7,25 +7,24 @@ const API = "https://aapatsetu-ai.onrender.com";
 
 async function getData(url, options = {}) {
 
-    const response =
-        await fetch(url, options);
+    const response = await fetch(url, options);
 
     if (!response.ok) {
 
-        let message =
-            `HTTP ${response.status}`;
+        let message = `HTTP ${response.status}`;
 
         try {
 
-            const error =
-                await response.json();
+            const error = await response.json();
 
             message =
                 error.detail ||
                 error.message ||
                 message;
 
-        } catch {}
+        } catch (error) {
+            // No JSON error response
+        }
 
         throw new Error(message);
     }
@@ -41,14 +40,14 @@ async function getData(url, options = {}) {
 async function loadIncidents() {
 
     const incidents =
-        await getData(
-            `${API}/incidents`
-        );
+        await getData(`${API}/incidents`);
 
-    document.getElementById(
-        "incident-count"
-    ).textContent =
-        incidents.length;
+    const count =
+        document.getElementById("incident-count");
+
+    if (count) {
+        count.textContent = incidents.length;
+    }
 
     const container =
         document.getElementById(
@@ -88,7 +87,13 @@ async function loadIncidents() {
 
                 <p>
                     <strong>Resources:</strong>
-                    ${incident.required_resources.join(", ")}
+                    ${
+                        Array.isArray(
+                            incident.required_resources
+                        )
+                            ? incident.required_resources.join(", ")
+                            : "Not specified"
+                    }
                 </p>
 
                 <p>
@@ -110,14 +115,14 @@ async function loadIncidents() {
 async function loadResources() {
 
     const resources =
-        await getData(
-            `${API}/resources`
-        );
+        await getData(`${API}/resources`);
 
-    document.getElementById(
-        "resource-count"
-    ).textContent =
-        resources.length;
+    const count =
+        document.getElementById("resource-count");
+
+    if (count) {
+        count.textContent = resources.length;
+    }
 
     const container =
         document.getElementById(
@@ -174,9 +179,7 @@ async function loadResources() {
 async function loadPlan() {
 
     const plan =
-        await getData(
-            `${API}/plan`
-        );
+        await getData(`${API}/plan`);
 
     const version =
         document.getElementById(
@@ -194,19 +197,17 @@ async function loadPlan() {
         );
 
     if (version) {
-
         version.textContent =
             plan.version;
     }
 
     if (status) {
-
         status.textContent =
             plan.status;
     }
 
     if (!container) {
-        return;
+        return plan;
     }
 
     container.innerHTML = `
@@ -225,23 +226,28 @@ async function loadPlan() {
             <br>
 
             Reason:
-            ${plan.change_reason}
+            ${plan.change_reason || "No reason provided"}
 
         </div>
 
     `;
 
+    if (!Array.isArray(plan.plan)) {
+        return plan;
+    }
+
     plan.plan.forEach(item => {
+
+        const resource =
+            item.resource_id ||
+            "⚠️ No Resource";
 
         container.innerHTML += `
 
             <div class="simulation-card">
 
                 <h3>
-                    ${
-                        item.resource_id
-                        || "⚠️ No Resource"
-                    }
+                    ${resource}
                 </h3>
 
                 <p>
@@ -278,6 +284,8 @@ async function loadPlan() {
 
         `;
     });
+
+    return plan;
 }
 
 
@@ -303,6 +311,11 @@ async function approvePlan() {
 
     } catch (error) {
 
+        console.error(
+            "Approval error:",
+            error
+        );
+
         alert(error.message);
     }
 }
@@ -313,6 +326,15 @@ async function approvePlan() {
 // ======================================================
 
 async function rejectPlan() {
+
+    const confirmed =
+        confirm(
+            "Are you sure you want to reject the current plan?"
+        );
+
+    if (!confirmed) {
+        return;
+    }
 
     try {
 
@@ -329,6 +351,11 @@ async function rejectPlan() {
         await loadAll();
 
     } catch (error) {
+
+        console.error(
+            "Rejection error:",
+            error
+        );
 
         alert(error.message);
     }
@@ -356,6 +383,11 @@ async function replan() {
         await loadAll();
 
     } catch (error) {
+
+        console.error(
+            "Re-planning error:",
+            error
+        );
 
         alert(error.message);
     }
@@ -472,6 +504,11 @@ async function newEmergency() {
 
     } catch (error) {
 
+        console.error(
+            "New emergency error:",
+            error
+        );
+
         alert(error.message);
     }
 }
@@ -499,6 +536,11 @@ async function resourceFailure() {
 
     } catch (error) {
 
+        console.error(
+            "Resource failure error:",
+            error
+        );
+
         alert(error.message);
     }
 }
@@ -525,6 +567,11 @@ async function increaseSeverity() {
         await loadAll();
 
     } catch (error) {
+
+        console.error(
+            "Severity increase error:",
+            error
+        );
 
         alert(error.message);
     }
@@ -574,7 +621,16 @@ async function loadMonitor() {
             ⚠️ Changes Detected
         </strong>
 
+        <p>
+            The monitoring system detected
+            changes requiring attention.
+        </p>
+
     `;
+
+    if (!Array.isArray(data.changes)) {
+        return;
+    }
 
     data.changes.forEach(change => {
 
@@ -591,7 +647,10 @@ async function loadMonitor() {
                 </p>
 
                 <p>
-                    <strong>Action:</strong>
+                    <strong>
+                        Action:
+                    </strong>
+
                     ${change.action || ""}
                 </p>
 
@@ -623,6 +682,10 @@ async function loadHistory() {
     }
 
     container.innerHTML = "";
+
+    if (!Array.isArray(history)) {
+        return;
+    }
 
     history.forEach(plan => {
 
@@ -721,6 +784,11 @@ async function loadAgents() {
         const data =
             await getData(
                 `${API}/agents/status`
+            );
+
+        const currentPlan =
+            await getData(
+                `${API}/plan`
             );
 
         const container =
@@ -847,20 +915,13 @@ async function loadAgents() {
                 };
 
 
-            // ----------------------------------------------
-            // STATUS CLASS
-            // ----------------------------------------------
-
             let statusClass =
                 "agent-normal";
 
 
             if (
-                agent.status ===
-                    "Passed" ||
-
-                agent.status ===
-                    "Completed"
+                agent.status === "Passed" ||
+                agent.status === "Completed"
             ) {
 
                 statusClass =
@@ -868,11 +929,8 @@ async function loadAgents() {
             }
 
             else if (
-                agent.status ===
-                    "Warning" ||
-
-                agent.status ===
-                    "Change Detected"
+                agent.status === "Warning" ||
+                agent.status === "Change Detected"
             ) {
 
                 statusClass =
@@ -880,8 +938,7 @@ async function loadAgents() {
             }
 
             else if (
-                agent.status ===
-                "Triggered"
+                agent.status === "Triggered"
             ) {
 
                 statusClass =
@@ -889,18 +946,13 @@ async function loadAgents() {
             }
 
             else if (
-                agent.status ===
-                "Monitoring"
+                agent.status === "Monitoring"
             ) {
 
                 statusClass =
                     "agent-monitoring";
             }
 
-
-            // ----------------------------------------------
-            // CARD
-            // ----------------------------------------------
 
             const card =
                 document.createElement(
@@ -956,10 +1008,9 @@ async function loadAgents() {
                 createAgentCard(agent);
 
 
-                /*
-                 * After Security/SISO, insert the
-                 * Human Approval stage.
-                 */
+                // ------------------------------------------
+                // HUMAN APPROVAL AFTER SECURITY
+                // ------------------------------------------
 
                 if (
                     agent.agent ===
@@ -968,10 +1019,6 @@ async function loadAgents() {
 
                     addConnector();
 
-
-                    // --------------------------------------
-                    // HUMAN APPROVAL STAGE
-                    // --------------------------------------
 
                     const humanStage =
                         document.createElement(
@@ -982,10 +1029,71 @@ async function loadAgents() {
                         "human-approval-stage";
 
 
+                    // Determine approval state
+                    const planStatus =
+                        currentPlan.status;
+
+
+                    let approvalIcon =
+                        "👤";
+
+                    let approvalStatus =
+                        "Human-in-the-Loop";
+
+
+                    if (
+                        planStatus ===
+                        "Pending Approval"
+                    ) {
+
+                        approvalIcon =
+                            "👤";
+
+                        approvalStatus =
+                            "Pending Human Approval";
+                    }
+
+                    else if (
+                        planStatus ===
+                        "Active"
+                    ) {
+
+                        approvalIcon =
+                            "✅";
+
+                        approvalStatus =
+                            "Plan Active";
+                    }
+
+                    else if (
+                        planStatus ===
+                        "Rejected"
+                    ) {
+
+                        approvalIcon =
+                            "❌";
+
+                        approvalStatus =
+                            "Plan Rejected";
+                    }
+
+                    else if (
+                        planStatus ===
+                        "Outdated"
+                    ) {
+
+                        approvalIcon =
+                            "⚠️";
+
+                        approvalStatus =
+                            "Plan Outdated";
+                    }
+
+
                     humanStage.innerHTML = `
 
                         <div class="human-approval-icon">
-                            👤
+                            ${approvalIcon}
                         </div>
 
                         <div class="human-approval-content">
@@ -995,12 +1103,37 @@ async function loadAgents() {
                             </strong>
 
                             <p>
-                                Emergency response plans
-                                require human review before activation.
+                                The response plan must
+                                be reviewed by a human
+                                before activation.
                             </p>
 
+                            <div class="human-approval-plan">
+
+                                <span>
+                                    Current Plan
+                                </span>
+
+                                <strong>
+                                    ${currentPlan.version}
+                                </strong>
+
+                            </div>
+
+                            <div class="human-approval-plan">
+
+                                <span>
+                                    Plan Status
+                                </span>
+
+                                <strong>
+                                    ${planStatus}
+                                </strong>
+
+                            </div>
+
                             <span class="human-approval-status">
-                                Human-in-the-Loop
+                                ${approvalStatus}
                             </span>
 
                         </div>
@@ -1012,11 +1145,6 @@ async function loadAgents() {
                         humanStage
                     );
 
-
-                    /*
-                     * Connector after Human Approval
-                     * is added only if another agent exists.
-                     */
 
                     if (
                         index <
@@ -1120,7 +1248,7 @@ async function loadAgents() {
                     </div>
 
                     <strong>
-                        Human-in-the-Loop
+                        ${currentPlan.status}
                     </strong>
 
                 </div>
@@ -1171,12 +1299,12 @@ async function loadAgents() {
 
 async function resetSimulation() {
 
-    if (
-        !confirm(
+    const confirmed =
+        confirm(
             "Reset the complete simulation?"
-        )
-    ) {
+        );
 
+    if (!confirmed) {
         return;
     }
 
@@ -1195,6 +1323,11 @@ async function resetSimulation() {
         await loadAll();
 
     } catch (error) {
+
+        console.error(
+            "Reset error:",
+            error
+        );
 
         alert(error.message);
     }
@@ -1239,84 +1372,149 @@ async function loadAll() {
 
 function connectButtons() {
 
-    document
-        .getElementById(
+    const approveButton =
+        document.getElementById(
             "approve-plan"
-        )
-        ?.addEventListener(
+        );
+
+    const rejectButton =
+        document.getElementById(
+            "reject-plan"
+        );
+
+    const replanButton =
+        document.getElementById(
+            "replan"
+        );
+
+    const aiButton =
+        document.getElementById(
+            "ai-analysis-btn"
+        );
+
+    const newEmergencyButton =
+        document.getElementById(
+            "new-emergency"
+        );
+
+    const resourceFailureButton =
+        document.getElementById(
+            "resource-failure"
+        );
+
+    const severityButton =
+        document.getElementById(
+            "increase-severity"
+        );
+
+    const resetButton =
+        document.getElementById(
+            "reset-simulation"
+        );
+
+
+    // ------------------------------------------------------
+    // APPROVE
+    // ------------------------------------------------------
+
+    if (approveButton) {
+
+        approveButton.addEventListener(
             "click",
             approvePlan
         );
+    }
 
 
-    document
-        .getElementById(
-            "reject-plan"
-        )
-        ?.addEventListener(
+    // ------------------------------------------------------
+    // REJECT
+    // ------------------------------------------------------
+
+    if (rejectButton) {
+
+        rejectButton.addEventListener(
             "click",
             rejectPlan
         );
+    }
 
 
-    document
-        .getElementById(
-            "replan"
-        )
-        ?.addEventListener(
+    // ------------------------------------------------------
+    // REPLAN
+    // ------------------------------------------------------
+
+    if (replanButton) {
+
+        replanButton.addEventListener(
             "click",
             replan
         );
+    }
 
 
-    document
-        .getElementById(
-            "ai-analysis-btn"
-        )
-        ?.addEventListener(
+    // ------------------------------------------------------
+    // AI ANALYSIS
+    // ------------------------------------------------------
+
+    if (aiButton) {
+
+        aiButton.addEventListener(
             "click",
             aiAnalysis
         );
+    }
 
 
-    document
-        .getElementById(
-            "new-emergency"
-        )
-        ?.addEventListener(
+    // ------------------------------------------------------
+    // NEW EMERGENCY
+    // ------------------------------------------------------
+
+    if (newEmergencyButton) {
+
+        newEmergencyButton.addEventListener(
             "click",
             newEmergency
         );
+    }
 
 
-    document
-        .getElementById(
-            "resource-failure"
-        )
-        ?.addEventListener(
+    // ------------------------------------------------------
+    // RESOURCE FAILURE
+    // ------------------------------------------------------
+
+    if (resourceFailureButton) {
+
+        resourceFailureButton.addEventListener(
             "click",
             resourceFailure
         );
+    }
 
 
-    document
-        .getElementById(
-            "increase-severity"
-        )
-        ?.addEventListener(
+    // ------------------------------------------------------
+    // SEVERITY
+    // ------------------------------------------------------
+
+    if (severityButton) {
+
+        severityButton.addEventListener(
             "click",
             increaseSeverity
         );
+    }
 
 
-    document
-        .getElementById(
-            "reset-simulation"
-        )
-        ?.addEventListener(
+    // ------------------------------------------------------
+    // RESET
+    // ------------------------------------------------------
+
+    if (resetButton) {
+
+        resetButton.addEventListener(
             "click",
             resetSimulation
         );
+    }
 
 
     console.log(
@@ -1326,7 +1524,7 @@ function connectButtons() {
 
 
 // ======================================================
-// START
+// START APPLICATION
 // ======================================================
 
 document.addEventListener(
