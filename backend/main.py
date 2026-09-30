@@ -1,20 +1,21 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import json
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime
 
 from backend.planner import allocate_resources
+
 from backend.agents import (
     assess_all_incidents,
     monitor_changes
 )
+
 from backend.security import (
     validate_incident,
     run_security_audit
 )
-from backend.ai_agent import generate_explanation
 
 from backend.multi_agent import (
     assessment_agent,
@@ -23,12 +24,10 @@ from backend.multi_agent import (
     monitoring_agent,
     replanning_agent
 )
-# ============================================================
-# PATHS
-# ============================================================
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = BASE_DIR / "data"
+from backend.ai_agent import (
+    generate_explanation
+)
 
 
 # ============================================================
@@ -37,7 +36,10 @@ DATA_DIR = BASE_DIR / "data"
 
 app = FastAPI(
     title="AapatSetu AI",
-    description="Emergency Response and Resource Coordination System"
+    description=(
+        "Emergency Response and Resource "
+        "Coordination System"
+    )
 )
 
 
@@ -47,11 +49,28 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
+
     allow_origins=["*"],
+
     allow_credentials=True,
+
     allow_methods=["*"],
+
     allow_headers=["*"]
 )
+
+
+# ============================================================
+# FILE PATHS
+# ============================================================
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+DATA_DIR = BASE_DIR / "data"
+
+INCIDENTS_FILE = DATA_DIR / "incidents.json"
+
+RESOURCES_FILE = DATA_DIR / "resources.json"
 
 
 # ============================================================
@@ -61,22 +80,20 @@ app.add_middleware(
 def load_data():
 
     with open(
-        DATA_DIR / "incidents.json",
+        INCIDENTS_FILE,
         "r",
         encoding="utf-8"
     ) as file:
 
         incidents = json.load(file)
 
-
     with open(
-        DATA_DIR / "resources.json",
+        RESOURCES_FILE,
         "r",
         encoding="utf-8"
     ) as file:
 
         resources = json.load(file)
-
 
     return incidents, resources
 
@@ -95,22 +112,26 @@ audit_log = []
 
 
 # ============================================================
-# AUDIT LOG
+# AUDIT LOG HELPER
 # ============================================================
 
-def add_audit_log(action, details):
+def add_audit_log(
+    action,
+    details
+):
 
     audit_log.append({
 
         "timestamp":
-            datetime.now(
-                timezone.utc
-            ).isoformat(),
+            datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),
 
-        "action": action,
+        "action":
+            action,
 
-        "details": details
-
+        "details":
+            details
     })
 
 
@@ -122,45 +143,14 @@ def create_plan(
     change_reason="Initial response plan"
 ):
 
-    validation_results = []
-
-    valid_incidents = []
-
-
-    for incident in incidents:
-
-        result = validate_incident(
-            incident
-        )
-
-        validation_results.append({
-
-            "incident_id":
-                incident.get("id"),
-
-            "validation":
-                result
-
-        })
-
-
-        if result["valid"]:
-
-            valid_incidents.append(
-                incident
-            )
-
-
     assessed_incidents = assess_all_incidents(
-        valid_incidents
+        incidents
     )
-
 
     plan = allocate_resources(
         assessed_incidents,
         resources
     )
-
 
     return {
 
@@ -173,12 +163,8 @@ def create_plan(
         "change_reason":
             change_reason,
 
-        "validation":
-            validation_results,
-
         "plan":
             plan
-
     }
 
 
@@ -193,8 +179,8 @@ plan_history.append(
 )
 
 add_audit_log(
-    "System Started",
-    "Initial emergency response plan V1 created."
+    "Initial Plan Created",
+    "Initial emergency response plan generated."
 )
 
 
@@ -212,7 +198,6 @@ def home():
 
         "status":
             "running"
-
     }
 
 
@@ -245,22 +230,85 @@ def get_plan():
 
     if not plan_history:
 
-        raise HTTPException(
-            status_code=404,
-            detail="No plan available"
-        )
+        return {
+            "message":
+                "No plan available"
+        }
 
     return plan_history[-1]
 
 
 # ============================================================
-# PLAN HISTORY
+# REPLAN
 # ============================================================
 
-@app.get("/plan-history")
-def get_plan_history():
+@app.post("/replan")
+def replan():
 
-    return plan_history
+    global plan_version
+
+    if not plan_history:
+
+        return {
+
+            "message":
+                "No existing plan"
+        }
+
+    current_plan = plan_history[-1]
+
+    current_status = current_plan["status"]
+
+    if current_status in [
+        "Active",
+        "Pending Approval",
+        "Outdated"
+    ]:
+
+        current_plan["status"] = "Superseded"
+
+
+    # --------------------------------------------------------
+    # Increase plan version
+    # --------------------------------------------------------
+
+    plan_version += 1
+
+
+    # --------------------------------------------------------
+    # Create new plan
+    # --------------------------------------------------------
+
+    new_plan = create_plan(
+        "Response plan updated because the situation changed"
+    )
+
+    plan_history.append(
+        new_plan
+    )
+
+
+    # --------------------------------------------------------
+    # Audit
+    # --------------------------------------------------------
+
+    add_audit_log(
+        "Re-planning",
+        (
+            f"New response plan "
+            f"{new_plan['version']} generated."
+        )
+    )
+
+
+    return {
+
+        "message":
+            "New response plan generated",
+
+        "plan":
+            new_plan
+    }
 
 
 # ============================================================
@@ -272,10 +320,11 @@ def approve_plan():
 
     if not plan_history:
 
-        raise HTTPException(
-            status_code=404,
-            detail="No plan available"
-        )
+        return {
+
+            "message":
+                "No plan available"
+        }
 
 
     current_plan = plan_history[-1]
@@ -290,7 +339,6 @@ def approve_plan():
 
             "status":
                 current_plan["status"]
-
         }
 
 
@@ -299,7 +347,10 @@ def approve_plan():
 
     add_audit_log(
         "Plan Approved",
-        f"{current_plan['version']} approved by human operator."
+        (
+            f"{current_plan['version']} "
+            "was approved by human operator."
+        )
     )
 
 
@@ -310,8 +361,675 @@ def approve_plan():
 
         "plan":
             current_plan
-
     }
+
+
+# ============================================================
+# REJECT PLAN
+# ============================================================
+
+@app.post("/reject-plan")
+def reject_plan():
+
+    if not plan_history:
+
+        return {
+
+            "message":
+                "No plan available"
+        }
+
+
+    current_plan = plan_history[-1]
+
+
+    if current_plan["status"] != "Pending Approval":
+
+        return {
+
+            "message":
+                "Plan is not waiting for approval",
+
+            "status":
+                current_plan["status"]
+        }
+
+
+    current_plan["status"] = "Rejected"
+
+
+    add_audit_log(
+        "Plan Rejected",
+        (
+            f"{current_plan['version']} "
+            "was rejected by human operator."
+        )
+    )
+
+
+    return {
+
+        "message":
+            "Plan rejected",
+
+        "plan":
+            current_plan
+    }
+
+
+# ============================================================
+# MODIFY PLAN
+# ============================================================
+
+@app.post("/modify-plan")
+def modify_plan(
+    resource_id: str,
+    incident_id: str
+):
+
+    if not plan_history:
+
+        return {
+
+            "message":
+                "No plan available"
+        }
+
+
+    current_plan = plan_history[-1]
+
+
+    if current_plan["status"] != "Pending Approval":
+
+        return {
+
+            "message":
+                "Plan is not waiting for approval",
+
+            "status":
+                current_plan["status"]
+        }
+
+
+    # --------------------------------------------------------
+    # Find resource
+    # --------------------------------------------------------
+
+    selected_resource = None
+
+    for resource in resources:
+
+        if resource["id"] == resource_id:
+
+            selected_resource = resource
+
+            break
+
+
+    if selected_resource is None:
+
+        return {
+
+            "message":
+                "Resource not found",
+
+            "resource_id":
+                resource_id
+        }
+
+
+    # --------------------------------------------------------
+    # Check availability
+    # --------------------------------------------------------
+
+    if selected_resource["status"] != "available":
+
+        return {
+
+            "message":
+                "Resource is not available",
+
+            "resource_id":
+                resource_id
+        }
+
+
+    # --------------------------------------------------------
+    # Check duplicate assignment
+    # --------------------------------------------------------
+
+    for assignment in current_plan["plan"]:
+
+        if (
+            assignment["resource_id"]
+            == resource_id
+            and
+            assignment["incident_id"]
+            != incident_id
+        ):
+
+            return {
+
+                "message":
+                    "Resource is already assigned",
+
+                "resource_id":
+                    resource_id,
+
+                "assigned_to":
+                    assignment["incident_id"]
+            }
+
+
+    # --------------------------------------------------------
+    # Modify assignment
+    # --------------------------------------------------------
+
+    for assignment in current_plan["plan"]:
+
+        if assignment["incident_id"] == incident_id:
+
+            old_resource = \
+                assignment["resource_id"]
+
+
+            assignment["resource_id"] = \
+                resource_id
+
+
+            assignment["status"] = \
+                "Assigned"
+
+
+            assignment["reason"] = (
+
+                "Assignment modified by "
+                "human operator. "
+
+                f"{resource_id} replaced "
+                f"{old_resource}."
+            )
+
+
+            add_audit_log(
+                "Plan Modified",
+                (
+                    f"{resource_id} assigned to "
+                    f"{incident_id} by human operator."
+                )
+            )
+
+
+            return {
+
+                "message":
+                    "Plan modified successfully",
+
+                "plan":
+                    current_plan
+            }
+
+
+    return {
+
+        "message":
+            "Incident not found in current plan",
+
+        "incident_id":
+            incident_id
+    }
+
+
+# ============================================================
+# PLAN HISTORY
+# ============================================================
+
+@app.get("/plan-history")
+def get_plan_history():
+
+    return plan_history
+
+
+# ============================================================
+# MONITOR
+# ============================================================
+
+@app.get("/monitor")
+def monitor():
+
+    if not plan_history:
+
+        return {
+
+            "message":
+                "No plan available"
+        }
+
+
+    current_plan = plan_history[-1]
+
+
+    changes = monitor_changes(
+        incidents,
+        resources,
+        current_plan
+    )
+
+
+    return {
+
+        "plan_version":
+            current_plan["version"],
+
+        "changes_detected":
+            len(changes) > 0,
+
+        "changes":
+            changes
+    }
+
+
+# ============================================================
+# SIMULATION — NEW EMERGENCY
+# ============================================================
+
+@app.post("/simulate/new-emergency")
+def new_emergency():
+
+    # --------------------------------------------------------
+    # Check if I004 already exists
+    # --------------------------------------------------------
+
+    for incident in incidents:
+
+        if incident["id"] == "I004":
+
+            return {
+
+                "message":
+                    "Chemical Factory Accident already exists",
+
+                "incident":
+                    incident
+            }
+
+
+    # --------------------------------------------------------
+    # Create new incident
+    # --------------------------------------------------------
+
+    new_incident = {
+
+        "id":
+            "I004",
+
+        "type":
+            "Chemical Factory Accident",
+
+        "location":
+            "Zone D",
+
+        "severity":
+            "Critical",
+
+        "required_resources":
+            [
+                "Ambulance"
+            ],
+
+        "status":
+            "Active"
+    }
+
+
+    incidents.append(
+        new_incident
+    )
+
+
+    # --------------------------------------------------------
+    # Mark current plan outdated
+    # --------------------------------------------------------
+
+    if plan_history:
+
+        current_plan = plan_history[-1]
+
+        if current_plan["status"] in [
+            "Pending Approval",
+            "Active"
+        ]:
+
+            current_plan["status"] = \
+                "Outdated"
+
+
+    # --------------------------------------------------------
+    # Audit
+    # --------------------------------------------------------
+
+    add_audit_log(
+        "New Emergency",
+        (
+            "New Critical emergency "
+            "I004 - Chemical Factory Accident "
+            "was detected."
+        )
+    )
+
+
+    return {
+
+        "message":
+            "New critical emergency detected",
+
+        "incident":
+            new_incident,
+
+        "plan_status":
+            plan_history[-1]["status"]
+    }
+
+
+# ============================================================
+# SIMULATION — RESOURCE FAILURE
+# ============================================================
+
+@app.post("/simulate/resource-failure")
+def resource_failure():
+
+    for resource in resources:
+
+        if resource["id"] == "A2":
+
+            if resource["status"] == "unavailable":
+
+                return {
+
+                    "message":
+                        "Ambulance A2 is already unavailable",
+
+                    "resource":
+                        resource
+                }
+
+
+            resource["status"] = \
+                "unavailable"
+
+
+            # ------------------------------------------------
+            # Mark current plan outdated
+            # ------------------------------------------------
+
+            if plan_history:
+
+                current_plan = plan_history[-1]
+
+                if current_plan["status"] in [
+                    "Pending Approval",
+                    "Active"
+                ]:
+
+                    current_plan["status"] = \
+                        "Outdated"
+
+
+            add_audit_log(
+                "Resource Failure",
+                "Ambulance A2 became unavailable."
+            )
+
+
+            return {
+
+                "message":
+                    "Ambulance A2 is unavailable",
+
+                "resource":
+                    resource,
+
+                "plan_status":
+                    plan_history[-1]["status"]
+            }
+
+
+    return {
+
+        "message":
+            "A2 not found"
+    }
+
+
+# ============================================================
+# SIMULATION — INCREASE SEVERITY
+# ============================================================
+
+@app.post("/simulate/increase-severity")
+def increase_severity():
+
+    for incident in incidents:
+
+        if incident["id"] == "I001":
+
+            if incident["severity"] == "Critical":
+
+                return {
+
+                    "message":
+                        "I001 is already Critical",
+
+                    "incident":
+                        incident
+                }
+
+
+            old_severity = \
+                incident["severity"]
+
+
+            incident["severity"] = \
+                "Critical"
+
+
+            # ------------------------------------------------
+            # Mark current plan outdated
+            # ------------------------------------------------
+
+            if plan_history:
+
+                current_plan = plan_history[-1]
+
+                if current_plan["status"] in [
+                    "Pending Approval",
+                    "Active"
+                ]:
+
+                    current_plan["status"] = \
+                        "Outdated"
+
+
+            add_audit_log(
+                "Severity Changed",
+                (
+                    f"I001 severity changed "
+                    f"from {old_severity} "
+                    "to Critical."
+                )
+            )
+
+
+            return {
+
+                "message":
+                    (
+                        f"I001 severity changed "
+                        f"from {old_severity} "
+                        "to Critical"
+                    ),
+
+                "incident":
+                    incident,
+
+                "plan_status":
+                    plan_history[-1]["status"]
+            }
+
+
+    return {
+
+        "message":
+            "Incident I001 not found"
+    }
+
+
+# ============================================================
+# SECURITY VALIDATION
+# ============================================================
+
+@app.get("/validate")
+def validate_data():
+
+    results = []
+
+    for incident in incidents:
+
+        result = validate_incident(
+            incident
+        )
+
+        results.append({
+
+            "incident_id":
+                incident["id"],
+
+            "validation":
+                result
+        })
+
+
+    return results
+
+
+# ============================================================
+# AUDIT LOG
+# ============================================================
+
+@app.get("/audit-log")
+def get_audit_log():
+
+    return {
+
+        "audit_log":
+            audit_log
+    }
+
+
+# ============================================================
+# AI — EXPLAIN CURRENT PLAN
+# ============================================================
+
+@app.get("/ai/explain-plan")
+def explain_plan():
+
+    if not plan_history:
+
+        return {
+
+            "message":
+                "No plan available",
+
+            "ai_analysis":
+                None
+        }
+
+
+    current_plan = \
+        plan_history[-1]
+
+
+    previous_plan = None
+
+    if len(plan_history) >= 2:
+
+        previous_plan = \
+            plan_history[-2]
+
+
+    explanation = generate_explanation(
+
+        current_plan,
+
+        incidents,
+
+        resources,
+
+        previous_plan
+    )
+
+
+    return {
+
+        "version":
+            current_plan["version"],
+
+        "ai_analysis":
+            explanation
+    }
+
+
+# ============================================================
+# AI — EXPLAIN CHANGE
+# ============================================================
+
+@app.get("/ai/explain-change")
+def explain_change():
+
+    if len(plan_history) < 2:
+
+        return {
+
+            "message":
+                "No previous plan available for comparison."
+        }
+
+
+    previous_plan = \
+        plan_history[-2]
+
+
+    current_plan = \
+        plan_history[-1]
+
+
+    explanation = generate_explanation(
+
+        current_plan,
+
+        incidents,
+
+        resources,
+
+        previous_plan
+    )
+
+
+    return {
+
+        "previous_version":
+            previous_plan["version"],
+
+        "current_version":
+            current_plan["version"],
+
+        "ai_analysis":
+            explanation
+    }
+
+
+# ============================================================
+# MULTI-AGENT STATUS
+# ============================================================
 
 @app.get("/agents/status")
 def get_agent_status():
@@ -326,10 +1044,24 @@ def get_agent_status():
 
 
     # ========================================================
-    # 2. PLANNING AGENT
+    # 2. CURRENT PLAN
     # ========================================================
 
-    current_plan = create_plan()
+    if not plan_history:
+
+        current_plan = create_plan(
+            "Temporary plan for agent status"
+        )
+
+    else:
+
+        current_plan = \
+            plan_history[-1]
+
+
+    # ========================================================
+    # 3. PLANNING AGENT
+    # ========================================================
 
     planning = planning_agent(
         current_plan["plan"]
@@ -337,7 +1069,7 @@ def get_agent_status():
 
 
     # ========================================================
-    # 3. SECURITY / SISO AGENT
+    # 4. SECURITY / SISO AGENT
     # ========================================================
 
     security_audit = run_security_audit(
@@ -356,7 +1088,7 @@ def get_agent_status():
 
 
     # ========================================================
-    # 4. MONITORING AGENT
+    # 5. MONITORING AGENT
     # ========================================================
 
     changes = monitor_changes(
@@ -375,7 +1107,7 @@ def get_agent_status():
 
 
     # ========================================================
-    # 5. RE-PLANNING AGENT
+    # 6. RE-PLANNING AGENT
     # ========================================================
 
     replanning = None
@@ -383,8 +1115,12 @@ def get_agent_status():
 
     if changes:
 
-        # Find the first actual emergency change
-        reason = changes[0]["reason"]
+        reason = \
+            changes[0].get(
+                "reason",
+                "Emergency situation changed."
+            )
+
 
         replanning = replanning_agent(
             reason
@@ -392,7 +1128,7 @@ def get_agent_status():
 
 
     # ========================================================
-    # FINAL MULTI-AGENT RESPONSE
+    # FINAL AGENT RESPONSE
     # ========================================================
 
     agents = [
@@ -423,699 +1159,9 @@ def get_agent_status():
             agents
     }
 
-# ============================================================
-# REJECT PLAN
-# ============================================================
-
-@app.post("/reject-plan")
-def reject_plan():
-
-    if not plan_history:
-
-        raise HTTPException(
-            status_code=404,
-            detail="No plan available"
-        )
-
-
-    current_plan = plan_history[-1]
-
-
-    if current_plan["status"] != "Pending Approval":
-
-        return {
-
-            "message":
-                "Plan is not waiting for approval",
-
-            "status":
-                current_plan["status"]
-
-        }
-
-
-    current_plan["status"] = "Rejected"
-
-
-    add_audit_log(
-        "Plan Rejected",
-        f"{current_plan['version']} rejected by human operator."
-    )
-
-
-    return {
-
-        "message":
-            "Plan rejected",
-
-        "plan":
-            current_plan
-
-    }
-
 
 # ============================================================
-# REPLAN
-# ============================================================
-
-@app.post("/replan")
-def replan():
-
-    global plan_version
-
-
-    if not plan_history:
-
-        raise HTTPException(
-            status_code=404,
-            detail="No existing plan"
-        )
-
-
-    current_plan = plan_history[-1]
-
-
-    if current_plan["status"] in [
-        "Active",
-        "Pending Approval",
-        "Outdated"
-    ]:
-
-        current_plan["status"] = "Superseded"
-
-
-    plan_version += 1
-
-
-    new_plan = create_plan(
-        "Response plan updated because the situation changed."
-    )
-
-
-    plan_history.append(
-        new_plan
-    )
-
-
-    add_audit_log(
-        "Plan Re-planned",
-        f"New response plan {new_plan['version']} generated."
-    )
-
-
-    return {
-
-        "message":
-            "New response plan generated",
-
-        "plan":
-            new_plan
-
-    }
-
-
-# ============================================================
-# MODIFY PLAN
-# ============================================================
-
-@app.post("/modify-plan")
-def modify_plan(
-    resource_id: str,
-    incident_id: str
-):
-
-    if not plan_history:
-
-        raise HTTPException(
-            status_code=404,
-            detail="No plan available"
-        )
-
-
-    current_plan = plan_history[-1]
-
-
-    if current_plan["status"] != "Pending Approval":
-
-        return {
-
-            "message":
-                "Plan is not waiting for approval",
-
-            "status":
-                current_plan["status"]
-
-        }
-
-
-    selected_resource = None
-
-
-    for resource in resources:
-
-        if resource["id"] == resource_id:
-
-            selected_resource = resource
-
-            break
-
-
-    if selected_resource is None:
-
-        return {
-
-            "message":
-                "Resource not found",
-
-            "resource_id":
-                resource_id
-
-        }
-
-
-    if selected_resource["status"] != "available":
-
-        return {
-
-            "message":
-                "Resource is not available",
-
-            "resource_id":
-                resource_id
-
-        }
-
-
-    for assignment in current_plan["plan"]:
-
-        if (
-            assignment["resource_id"] == resource_id
-            and assignment["incident_id"] != incident_id
-        ):
-
-            return {
-
-                "message":
-                    "Resource is already assigned",
-
-                "resource_id":
-                    resource_id,
-
-                "assigned_to":
-                    assignment["incident_id"]
-
-            }
-
-
-    for assignment in current_plan["plan"]:
-
-        if assignment["incident_id"] == incident_id:
-
-            old_resource = assignment["resource_id"]
-
-
-            assignment["resource_id"] = resource_id
-
-            assignment["status"] = "Assigned"
-
-            assignment["reason"] = (
-                "Assignment modified by human operator. "
-                f"{resource_id} replaced {old_resource}."
-            )
-
-
-            add_audit_log(
-                "Plan Modified",
-                f"{resource_id} assigned to {incident_id}."
-            )
-
-
-            return {
-
-                "message":
-                    "Plan modified successfully",
-
-                "plan":
-                    current_plan
-
-            }
-
-
-    return {
-
-        "message":
-            "Incident not found in current plan",
-
-        "incident_id":
-            incident_id
-
-    }
-
-
-# ============================================================
-# MONITOR
-# ============================================================
-
-@app.get("/monitor")
-def monitor():
-
-    if not plan_history:
-
-        return {
-
-            "changes_detected":
-                False,
-
-            "changes":
-                []
-
-        }
-
-
-    current_plan = plan_history[-1]
-
-
-    changes = monitor_changes(
-        incidents,
-        resources,
-        current_plan
-    )
-
-
-    return {
-
-        "plan_version":
-            current_plan["version"],
-
-        "changes_detected":
-            len(changes) > 0,
-
-        "changes":
-            changes
-
-    }
-
-
-# ============================================================
-# NEW EMERGENCY
-# ============================================================
-
-@app.post("/simulate/new-emergency")
-def new_emergency():
-
-    for incident in incidents:
-
-        if incident["id"] == "I004":
-
-            return {
-
-                "message":
-                    "Chemical Factory Accident already exists",
-
-                "incident":
-                    incident
-
-            }
-
-
-    new_incident = {
-
-        "id":
-            "I004",
-
-        "type":
-            "Chemical Factory Accident",
-
-        "location":
-            "Zone D",
-
-        "severity":
-            "Critical",
-
-        "required_resources":
-            ["Ambulance"],
-
-        "status":
-            "Active"
-
-    }
-
-
-    incidents.append(
-        new_incident
-    )
-
-
-    if plan_history:
-
-        current_plan = plan_history[-1]
-
-
-        if current_plan["status"] in [
-            "Pending Approval",
-            "Active"
-        ]:
-
-            current_plan["status"] = "Outdated"
-
-
-    add_audit_log(
-        "New Emergency",
-        "Critical chemical factory accident I004 detected."
-    )
-
-
-    return {
-
-        "message":
-            "New critical emergency detected",
-
-        "incident":
-            new_incident
-
-    }
-
-
-# ============================================================
-# RESOURCE FAILURE
-# ============================================================
-
-@app.post("/simulate/resource-failure")
-def resource_failure():
-
-    for resource in resources:
-
-        if resource["id"] == "A2":
-
-            if resource["status"] == "unavailable":
-
-                return {
-
-                    "message":
-                        "Ambulance A2 is already unavailable",
-
-                    "resource":
-                        resource
-
-                }
-
-
-            resource["status"] = "unavailable"
-
-
-            if plan_history:
-
-                current_plan = plan_history[-1]
-
-
-                if current_plan["status"] in [
-                    "Pending Approval",
-                    "Active"
-                ]:
-
-                    current_plan["status"] = "Outdated"
-
-
-            add_audit_log(
-                "Resource Failure",
-                "Ambulance A2 marked unavailable."
-            )
-
-
-            return {
-
-                "message":
-                    "Ambulance A2 is unavailable",
-
-                "resource":
-                    resource
-
-            }
-
-
-    return {
-
-        "message":
-            "A2 not found"
-
-    }
-
-
-# ============================================================
-# INCREASE SEVERITY
-# ============================================================
-
-@app.post("/simulate/increase-severity")
-def increase_severity():
-
-    for incident in incidents:
-
-        if incident["id"] == "I001":
-
-            if incident["severity"] == "Critical":
-
-                return {
-
-                    "message":
-                        "I001 is already Critical",
-
-                    "incident":
-                        incident
-
-                }
-
-
-            old_severity = incident["severity"]
-
-            incident["severity"] = "Critical"
-
-
-            if plan_history:
-
-                current_plan = plan_history[-1]
-
-
-                if current_plan["status"] in [
-                    "Pending Approval",
-                    "Active"
-                ]:
-
-                    current_plan["status"] = "Outdated"
-
-
-            add_audit_log(
-                "Severity Increased",
-                f"I001 changed from {old_severity} to Critical."
-            )
-
-
-            return {
-
-                "message":
-                    f"I001 severity changed from "
-                    f"{old_severity} to Critical",
-
-                "incident":
-                    incident
-
-            }
-
-
-    return {
-
-        "message":
-            "Incident I001 not found"
-
-    }
-
-
-# ============================================================
-# VALIDATE
-# ============================================================
-
-@app.get("/validate")
-def validate_data():
-
-    results = []
-
-
-    for incident in incidents:
-
-        result = validate_incident(
-            incident
-        )
-
-
-        results.append({
-
-            "incident_id":
-                incident["id"],
-
-            "validation":
-                result
-
-        })
-
-
-    return results
-
-
-# ============================================================
-# AUDIT LOG
-# ============================================================
-
-@app.get("/audit-log")
-def get_audit_log():
-
-    return {
-
-        "audit_log":
-            audit_log
-
-    }
-
-
-# ============================================================
-# AI EXPLAIN PLAN
-# ============================================================
-
-@app.get("/ai/explain-plan")
-def explain_plan():
-
-    if not plan_history:
-
-        raise HTTPException(
-            status_code=404,
-            detail="No plan available"
-        )
-
-
-    current_plan = plan_history[-1]
-
-
-    try:
-
-        explanation = generate_explanation(
-
-            current_plan,
-
-            incidents,
-
-            resources,
-
-            None
-
-        )
-
-
-        return {
-
-            "plan_version":
-                current_plan["version"],
-
-            "ai_analysis":
-                explanation
-
-        }
-
-
-    except Exception as error:
-
-        print(
-            "AI EXPLANATION ERROR:",
-            error
-        )
-
-
-        raise HTTPException(
-
-            status_code=502,
-
-            detail=
-                f"AI service error: {str(error)}"
-
-        )
-
-
-# ============================================================
-# AI EXPLAIN CHANGE
-# ============================================================
-
-@app.get("/ai/explain-change")
-def explain_change():
-
-    if len(plan_history) < 2:
-
-        return {
-
-            "message":
-                "No previous plan available for comparison.",
-
-            "ai_analysis": {
-
-                "summary":
-                    "This is the first response plan. "
-                    "There is no previous plan to compare."
-
-            }
-
-        }
-
-
-    previous_plan = plan_history[-2]
-
-    current_plan = plan_history[-1]
-
-
-    try:
-
-        explanation = generate_explanation(
-
-            current_plan,
-
-            incidents,
-
-            resources,
-
-            previous_plan
-
-        )
-
-
-        return {
-
-            "previous_version":
-                previous_plan["version"],
-
-            "current_version":
-                current_plan["version"],
-
-            "ai_analysis":
-                explanation
-
-        }
-
-
-    except Exception as error:
-
-        print(
-            "AI CHANGE EXPLANATION ERROR:",
-            error
-        )
-
-
-        raise HTTPException(
-
-            status_code=502,
-
-            detail=
-                f"AI service error: {str(error)}"
-
-        )
-
-
-# ============================================================
-# RESET
+# RESET SIMULATION
 # ============================================================
 
 @app.post("/reset")
@@ -1128,7 +1174,17 @@ def reset_simulation():
     global audit_log
 
 
-    incidents, resources = load_data()
+    # --------------------------------------------------------
+    # Reload original data
+    # --------------------------------------------------------
+
+    incidents, resources = \
+        load_data()
+
+
+    # --------------------------------------------------------
+    # Reset plan state
+    # --------------------------------------------------------
 
     plan_version = 1
 
@@ -1137,8 +1193,12 @@ def reset_simulation():
     audit_log = []
 
 
+    # --------------------------------------------------------
+    # Create fresh V1
+    # --------------------------------------------------------
+
     initial_plan = create_plan(
-        "Simulation reset to initial state."
+        "Simulation reset to initial state"
     )
 
 
@@ -1149,7 +1209,7 @@ def reset_simulation():
 
     add_audit_log(
         "Simulation Reset",
-        "Simulation returned to the initial state."
+        "Simulation returned to initial state."
     )
 
 
@@ -1160,5 +1220,4 @@ def reset_simulation():
 
         "plan":
             initial_plan
-
     }
