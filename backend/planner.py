@@ -134,9 +134,11 @@ def allocate_resources(
 
                     "reason":
                         (
-                            f"No available "
-                            f"{required_type} "
-                            f"for this incident."
+                           (
+                                f"No available {required_type} "
+                                f"for {incident['id']}. "
+                                f"Human attention is required."
+                            )
                         )
                 })
 
