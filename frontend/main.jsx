@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 
-import Dashboard from "./dashboard";
+import Dashboard from "./dashboard.jsx";
 import "./style.css";
 
 
