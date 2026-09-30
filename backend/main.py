@@ -319,50 +319,56 @@ def replan():
 def approve_plan():
 
     if not plan_history:
-
         return {
-
-            "message":
-                "No plan available"
+            "message": "No response plan available."
         }
-
 
     current_plan = plan_history[-1]
 
-
-    if current_plan["status"] != "Pending Approval":
-
+    if current_plan["status"] == "Active":
         return {
-
             "message":
-                "Plan is not waiting for approval",
-
-            "status":
-                current_plan["status"]
+                f"{current_plan['version']} is already active."
         }
 
+    if current_plan["status"] == "Outdated":
+        return {
+            "message":
+                "This plan is outdated. Please re-plan first."
+        }
+
+    # Security must pass before approval
+    security = current_plan.get("security")
+
+    if security:
+        if security["status"] != "Passed":
+            return {
+                "message":
+                    "Plan cannot be approved because security validation failed.",
+                "security":
+                    security
+            }
 
     current_plan["status"] = "Active"
-
 
     add_audit_log(
         "Plan Approved",
         (
-            f"{current_plan['version']} "
-            "was approved by human operator."
+            f"{current_plan['version']} was approved "
+            "by human review and is now active."
         )
     )
 
-
     return {
-
         "message":
-            "Plan approved successfully",
+            f"{current_plan['version']} approved successfully.",
 
-        "plan":
-            current_plan
+        "version":
+            current_plan["version"],
+
+        "status":
+            current_plan["status"]
     }
-
 
 # ============================================================
 # REJECT PLAN
