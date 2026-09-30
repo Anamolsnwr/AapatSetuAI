@@ -318,145 +318,312 @@ async function loadResources() {
 
 async function loadPlan() {
 
-    const plan =
-        await getData(
-            `${API}/plan`
-        );
+    try {
 
-    const version =
-        document.getElementById(
-            "plan-version"
-        );
+        const data =
+            await getData(
+                `${API}/plan`
+            );
 
-    const status =
-        document.getElementById(
-            "plan-status"
-        );
+        const container =
+            document.getElementById(
+                "plan-container"
+            );
 
-    const container =
-        document.getElementById(
-            "plan-container"
-        );
+        if (!container) {
+            return;
+        }
 
+        const currentPlan =
+            data.plan;
 
-    if (version) {
+        if (!currentPlan) {
 
-        version.textContent =
-            plan.version;
-    }
+            container.innerHTML = `
+                <div class="plan-empty">
+                    No response plan available.
+                </div>
+            `;
 
+            return;
+        }
 
-    if (status) {
+        const plan =
+            currentPlan.plan || [];
 
-        status.textContent =
-            plan.status;
-    }
+        const version =
+            currentPlan.version || "V1";
 
+        const status =
+            currentPlan.status ||
+            "Unknown";
 
-    if (!container) {
-        return plan;
-    }
+        let statusClass =
+            "pending";
 
+        if (status === "Active") {
 
-    container.innerHTML = `
+            statusClass =
+                "active";
 
-        <div class="info-box">
+        } else if (
+            status === "Outdated"
+        ) {
 
-            <strong>
-                📋 ${plan.version}
-            </strong>
+            statusClass =
+                "outdated";
 
-            <br><br>
+        } else if (
+            status === "Rejected"
+        ) {
 
-            <strong>
-                Status:
-            </strong>
+            statusClass =
+                "rejected";
+        }
 
-            ${plan.status}
+        const assignedCount =
+            plan.filter(
+                item =>
+                    item.status ===
+                    "Assigned"
+            ).length;
 
-            <br><br>
-
-            <strong>
-                Reason:
-            </strong>
-
-            ${plan.change_reason ||
-                "No reason provided"}
-
-        </div>
-
-    `;
-
-
-    if (
-        !Array.isArray(plan.plan)
-    ) {
-
-        return plan;
-    }
-
-
-    plan.plan.forEach(
-        item => {
-
-            const resource =
-                item.resource_id ||
-                "⚠️ No Resource";
+        const attentionCount =
+            plan.filter(
+                item =>
+                    item.status ===
+                    "Human Attention Required"
+            ).length;
 
 
-            const assignmentStatus =
-                item.status ===
-                "Assigned"
-                    ? "🟢 Assigned"
-                    : "⚠️ Human Attention Required";
+        function getSeverityClass(
+            severity
+        ) {
+
+            if (!severity) {
+                return "low";
+            }
+
+            return severity
+                .toLowerCase();
+        }
 
 
-            container.innerHTML += `
+        container.innerHTML = `
 
-                <div class="simulation-card">
+            <div class="plan-summary">
 
-                    <h3>
-                        ${resource}
-                    </h3>
+                <div class="plan-summary-card">
 
-                    <p>
-                        <strong>Incident:</strong>
-                        ${item.incident_id}
-                    </p>
+                    <span>
+                        Plan Version
+                    </span>
 
-                    <p>
-                        <strong>Type:</strong>
-                        ${item.incident_type}
-                    </p>
-
-                    <p>
-                        <strong>Location:</strong>
-                        ${item.location}
-                    </p>
-
-                    <p>
-                        <strong>Severity:</strong>
-                        ${item.severity}
-                    </p>
-
-                    <p>
-                        <strong>Status:</strong>
-                        ${assignmentStatus}
-                    </p>
-
-                    <p>
-                        <strong>Reason:</strong>
-                        ${item.reason}
-                    </p>
+                    <strong
+                        class="plan-version"
+                    >
+                        ${version}
+                    </strong>
 
                 </div>
 
-            `;
-        }
-    );
+
+                <div class="plan-summary-card">
+
+                    <span>
+                        Plan Status
+                    </span>
+
+                    <strong
+                        class="plan-status ${statusClass}"
+                    >
+                        ${status}
+                    </strong>
+
+                </div>
 
 
-    return plan;
+                <div class="plan-summary-card">
+
+                    <span>
+                        Assigned
+                    </span>
+
+                    <strong>
+                        ${assignedCount}
+                    </strong>
+
+                </div>
+
+
+                <div class="plan-summary-card">
+
+                    <span>
+                        Human Attention
+                    </span>
+
+                    <strong>
+                        ${attentionCount}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="plan-assignments">
+
+                ${
+                    plan.length === 0
+
+                    ?
+
+                    `
+                    <div class="plan-empty">
+                        No assignments available.
+                    </div>
+                    `
+
+                    :
+
+                    plan.map(
+                        assignment => {
+
+                            const isAttention =
+                                assignment.status ===
+                                "Human Attention Required";
+
+                            const cardClass =
+                                isAttention
+                                    ? "attention"
+                                    : "assigned";
+
+                            const statusClass =
+                                isAttention
+                                    ? "attention"
+                                    : "assigned";
+
+                            const statusIcon =
+                                isAttention
+                                    ? "⚠️"
+                                    : "🟢";
+
+                            const resource =
+                                assignment.resource_id
+                                || "No Resource";
+
+                            const reason =
+                                assignment.reason
+                                || "No reason provided.";
+
+                            const severity =
+                                assignment.severity
+                                || "Low";
+
+                            return `
+
+                                <div
+                                    class="
+                                        plan-assignment
+                                        ${cardClass}
+                                    "
+                                >
+
+                                    <div
+                                        class="
+                                            plan-assignment-header
+                                        "
+                                    >
+
+                                        <div
+                                            class="
+                                                plan-resource
+                                            "
+                                        >
+                                            🚑
+                                            ${resource}
+                                            →
+                                            ${assignment.incident_id}
+                                        </div>
+
+
+                                        <div
+                                            class="
+                                                plan-assignment-status
+                                                ${statusClass}
+                                            "
+                                        >
+                                            ${statusIcon}
+                                            ${assignment.status}
+                                        </div>
+
+                                    </div>
+
+
+                                    <div
+                                        class="
+                                            plan-incident
+                                        "
+                                    >
+                                        <strong>
+                                            ${assignment.incident_type}
+                                        </strong>
+                                    </div>
+
+
+                                    <div
+                                        class="
+                                            plan-location
+                                        "
+                                    >
+                                        📍
+                                        ${assignment.location}
+                                    </div>
+
+
+                                    <span
+                                        class="
+                                            plan-severity
+                                            ${getSeverityClass(
+                                                severity
+                                            )}
+                                        "
+                                    >
+                                        ${severity}
+                                    </span>
+
+
+                                    <div
+                                        class="
+                                            plan-reason
+                                        "
+                                    >
+                                        <strong>
+                                            Why:
+                                        </strong>
+
+                                        ${reason}
+                                    </div>
+
+                                </div>
+
+                            `;
+                        }
+                    ).join("")
+                }
+
+            </div>
+
+        `;
+
+    } catch (error) {
+
+        console.error(
+            "Plan loading error:",
+            error
+        );
+
+    }
 }
 
 
