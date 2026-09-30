@@ -47,7 +47,11 @@ async function getData(url, options = {}) {
 
 function escapeHTML(value) {
 
-    if (value === null || value === undefined) {
+    if (
+        value === null ||
+        value === undefined
+    ) {
+
         return "";
     }
 
@@ -81,7 +85,11 @@ async function checkSystemStatus() {
             "system-status"
         );
 
-    if (!statusText || !statusDot) {
+    if (
+        !statusText ||
+        !statusDot
+    ) {
+
         return;
     }
 
@@ -177,7 +185,10 @@ async function loadIncidents() {
 
     container.innerHTML = "";
 
-    if (!Array.isArray(incidents) || incidents.length === 0) {
+    if (
+        !Array.isArray(incidents) ||
+        incidents.length === 0
+    ) {
 
         container.innerHTML = `
             <div class="plan-empty">
@@ -232,33 +243,45 @@ async function loadIncidents() {
                 <div class="simulation-card">
 
                     <h3>
-                        🚨 ${escapeHTML(incident.id)}
+                        🚨 ${escapeHTML(
+                            incident.id
+                        )}
                     </h3>
 
                     <p>
                         <strong>Type:</strong>
-                        ${escapeHTML(incident.type)}
+                        ${escapeHTML(
+                            incident.type
+                        )}
                     </p>
 
                     <p>
                         <strong>Location:</strong>
-                        ${escapeHTML(incident.location)}
+                        ${escapeHTML(
+                            incident.location
+                        )}
                     </p>
 
                     <p>
                         <strong>Severity:</strong>
                         ${severityIcon}
-                        ${escapeHTML(incident.severity)}
+                        ${escapeHTML(
+                            incident.severity
+                        )}
                     </p>
 
                     <p>
                         <strong>Resources:</strong>
-                        ${escapeHTML(resources)}
+                        ${escapeHTML(
+                            resources
+                        )}
                     </p>
 
                     <p>
                         <strong>Status:</strong>
-                        ${escapeHTML(incident.status)}
+                        ${escapeHTML(
+                            incident.status
+                        )}
                     </p>
 
                 </div>
@@ -302,7 +325,10 @@ async function loadResources() {
 
     container.innerHTML = "";
 
-    if (!Array.isArray(resources) || resources.length === 0) {
+    if (
+        !Array.isArray(resources) ||
+        resources.length === 0
+    ) {
 
         container.innerHTML = `
             <div class="plan-empty">
@@ -331,17 +357,23 @@ async function loadResources() {
                 <div class="simulation-card">
 
                     <h3>
-                        🚑 ${escapeHTML(resource.id)}
+                        🚑 ${escapeHTML(
+                            resource.id
+                        )}
                     </h3>
 
                     <p>
                         <strong>Type:</strong>
-                        ${escapeHTML(resource.type)}
+                        ${escapeHTML(
+                            resource.type
+                        )}
                     </p>
 
                     <p>
                         <strong>Location:</strong>
-                        ${escapeHTML(resource.location)}
+                        ${escapeHTML(
+                            resource.location
+                        )}
                     </p>
 
                     <p>
@@ -375,12 +407,25 @@ async function loadPlan() {
                 "plan-container"
             );
 
+        const planVersion =
+            document.getElementById(
+                "plan-version"
+            );
+
+        const planStatus =
+            document.getElementById(
+                "plan-status"
+            );
+
+
         if (!container) {
             return;
         }
 
+
         const currentPlan =
             data.plan;
+
 
         if (!currentPlan) {
 
@@ -390,29 +435,68 @@ async function loadPlan() {
                 </div>
             `;
 
+
+            if (planVersion) {
+
+                planVersion.textContent =
+                    "N/A";
+            }
+
+
+            if (planStatus) {
+
+                planStatus.textContent =
+                    "No Plan";
+            }
+
+
             return;
         }
 
+
         const plan =
-            Array.isArray(currentPlan.plan)
+            Array.isArray(
+                currentPlan.plan
+            )
                 ? currentPlan.plan
                 : [];
+
 
         const version =
             currentPlan.version ||
             "V1";
+
 
         const status =
             currentPlan.status ||
             "Unknown";
 
 
-        // --------------------------------------------------
+        // ==================================================
+        // UPDATE TOP DASHBOARD STATISTICS
+        // ==================================================
+
+        if (planVersion) {
+
+            planVersion.textContent =
+                version;
+        }
+
+
+        if (planStatus) {
+
+            planStatus.textContent =
+                status;
+        }
+
+
+        // ==================================================
         // PLAN STATUS CLASS
-        // --------------------------------------------------
+        // ==================================================
 
         let statusClass =
             "pending";
+
 
         if (
             status === "Active"
@@ -437,9 +521,9 @@ async function loadPlan() {
         }
 
 
-        // --------------------------------------------------
+        // ==================================================
         // PLAN COUNTS
-        // --------------------------------------------------
+        // ==================================================
 
         const assignedCount =
             plan.filter(
@@ -447,6 +531,7 @@ async function loadPlan() {
                     item.status ===
                     "Assigned"
             ).length;
+
 
         const attentionCount =
             plan.filter(
@@ -456,15 +541,16 @@ async function loadPlan() {
             ).length;
 
 
-        // --------------------------------------------------
+        // ==================================================
         // SEVERITY CLASS
-        // --------------------------------------------------
+        // ==================================================
 
         function getSeverityClass(
             severity
         ) {
 
             if (!severity) {
+
                 return "low";
             }
 
@@ -474,9 +560,9 @@ async function loadPlan() {
         }
 
 
-        // --------------------------------------------------
+        // ==================================================
         // PLAN DISPLAY
-        // --------------------------------------------------
+        // ==================================================
 
         container.innerHTML = `
 
@@ -491,7 +577,9 @@ async function loadPlan() {
                     <strong
                         class="plan-version"
                     >
-                        ${escapeHTML(version)}
+                        ${escapeHTML(
+                            version
+                        )}
                     </strong>
 
                 </div>
@@ -506,7 +594,9 @@ async function loadPlan() {
                     <strong
                         class="plan-status ${statusClass}"
                     >
-                        ${escapeHTML(status)}
+                        ${escapeHTML(
+                            status
+                        )}
                     </strong>
 
                 </div>
@@ -583,17 +673,20 @@ async function loadPlan() {
 
                             const resource =
                                 assignment.resource_id
-                                || "No Resource";
+                                ||
+                                "No Resource";
 
 
                             const reason =
                                 assignment.reason
-                                || "No reason provided.";
+                                ||
+                                "No reason provided.";
 
 
                             const severity =
                                 assignment.severity
-                                || "Low";
+                                ||
+                                "Low";
 
 
                             return `
@@ -618,7 +711,9 @@ async function loadPlan() {
                                         >
 
                                             🚑
-                                            ${escapeHTML(resource)}
+                                            ${escapeHTML(
+                                                resource
+                                            )}
 
                                             →
 
@@ -654,9 +749,11 @@ async function loadPlan() {
                                     >
 
                                         <strong>
+
                                             ${escapeHTML(
                                                 assignment.incident_type
                                             )}
+
                                         </strong>
 
                                     </div>
@@ -669,6 +766,7 @@ async function loadPlan() {
                                     >
 
                                         📍
+
                                         ${escapeHTML(
                                             assignment.location
                                         )}
@@ -726,10 +824,12 @@ async function loadPlan() {
             error
         );
 
+
         const container =
             document.getElementById(
                 "plan-container"
             );
+
 
         if (container) {
 
@@ -748,6 +848,32 @@ async function loadPlan() {
                 </div>
 
             `;
+        }
+
+
+        const planVersion =
+            document.getElementById(
+                "plan-version"
+            );
+
+
+        const planStatus =
+            document.getElementById(
+                "plan-status"
+            );
+
+
+        if (planVersion) {
+
+            planVersion.textContent =
+                "Error";
+        }
+
+
+        if (planStatus) {
+
+            planStatus.textContent =
+                "Unavailable";
         }
     }
 }
@@ -769,7 +895,9 @@ async function approvePlan() {
                 }
             );
 
-        alert(data.message);
+        alert(
+            data.message
+        );
 
         await loadAll();
 
@@ -780,7 +908,9 @@ async function approvePlan() {
             error
         );
 
-        alert(error.message);
+        alert(
+            error.message
+        );
     }
 }
 
@@ -796,7 +926,9 @@ async function rejectPlan() {
             "Are you sure you want to reject the current plan?"
         );
 
+
     if (!confirmed) {
+
         return;
     }
 
@@ -811,7 +943,11 @@ async function rejectPlan() {
                 }
             );
 
-        alert(data.message);
+
+        alert(
+            data.message
+        );
+
 
         await loadAll();
 
@@ -822,7 +958,9 @@ async function rejectPlan() {
             error
         );
 
-        alert(error.message);
+        alert(
+            error.message
+        );
     }
 }
 
@@ -843,7 +981,11 @@ async function replan() {
                 }
             );
 
-        alert(data.message);
+
+        alert(
+            data.message
+        );
+
 
         await loadAll();
 
@@ -854,7 +996,9 @@ async function replan() {
             error
         );
 
-        alert(error.message);
+        alert(
+            error.message
+        );
     }
 }
 
@@ -870,7 +1014,9 @@ async function aiAnalysis() {
             "ai-analysis"
         );
 
+
     if (!box) {
+
         return;
     }
 
@@ -908,9 +1054,11 @@ async function aiAnalysis() {
             <hr>
 
             <div>
+
                 ${formatAIText(
                     data.ai_analysis.summary
                 )}
+
             </div>
 
         `;
@@ -946,11 +1094,12 @@ async function aiAnalysis() {
 
 function formatAIText(text) {
 
-    return escapeHTML(text)
-        .replace(
-            /\n/g,
-            "<br>"
-        );
+    return escapeHTML(
+        text
+    ).replace(
+        /\n/g,
+        "<br>"
+    );
 }
 
 
@@ -970,7 +1119,11 @@ async function newEmergency() {
                 }
             );
 
-        alert(data.message);
+
+        alert(
+            data.message
+        );
+
 
         await loadAll();
 
@@ -981,7 +1134,9 @@ async function newEmergency() {
             error
         );
 
-        alert(error.message);
+        alert(
+            error.message
+        );
     }
 }
 
@@ -1002,7 +1157,11 @@ async function resourceFailure() {
                 }
             );
 
-        alert(data.message);
+
+        alert(
+            data.message
+        );
+
 
         await loadAll();
 
@@ -1013,7 +1172,9 @@ async function resourceFailure() {
             error
         );
 
-        alert(error.message);
+        alert(
+            error.message
+        );
     }
 }
 
@@ -1034,7 +1195,11 @@ async function increaseSeverity() {
                 }
             );
 
-        alert(data.message);
+
+        alert(
+            data.message
+        );
+
 
         await loadAll();
 
@@ -1045,7 +1210,9 @@ async function increaseSeverity() {
             error
         );
 
-        alert(error.message);
+        alert(
+            error.message
+        );
     }
 }
 
@@ -1061,7 +1228,9 @@ async function loadMonitor() {
             "monitor-container"
         );
 
+
     if (!container) {
+
         return;
     }
 
@@ -1074,7 +1243,9 @@ async function loadMonitor() {
             );
 
 
-        if (!data.changes_detected) {
+        if (
+            !data.changes_detected
+        ) {
 
             container.innerHTML = `
 
@@ -1107,7 +1278,9 @@ async function loadMonitor() {
 
 
         if (
-            !Array.isArray(data.changes)
+            !Array.isArray(
+                data.changes
+            )
         ) {
 
             return;
@@ -1158,6 +1331,7 @@ async function loadMonitor() {
             error
         );
 
+
         container.innerHTML = `
 
             <strong>
@@ -1186,7 +1360,9 @@ async function loadHistory() {
             "history-container"
         );
 
+
     if (!container) {
+
         return;
     }
 
@@ -1208,9 +1384,11 @@ async function loadHistory() {
         ) {
 
             container.innerHTML = `
+
                 <div class="plan-empty">
                     No plan history available.
                 </div>
+
             `;
 
             return;
@@ -1231,17 +1409,27 @@ async function loadHistory() {
                         </h3>
 
                         <p>
-                            <strong>Status:</strong>
+
+                            <strong>
+                                Status:
+                            </strong>
+
                             ${escapeHTML(
                                 plan.status
                             )}
+
                         </p>
 
                         <p>
-                            <strong>Reason:</strong>
+
+                            <strong>
+                                Reason:
+                            </strong>
+
                             ${escapeHTML(
                                 plan.change_reason
                             )}
+
                         </p>
 
                     </div>
@@ -1256,6 +1444,7 @@ async function loadHistory() {
             "History loading error:",
             error
         );
+
 
         container.innerHTML = `
 
@@ -1281,7 +1470,9 @@ async function loadAuditLog() {
             "audit-container"
         );
 
+
     if (!container) {
+
         return;
     }
 
@@ -1307,9 +1498,13 @@ async function loadAuditLog() {
         ) {
 
             container.innerHTML = `
+
                 <div class="plan-empty">
+
                     No audit events recorded.
+
                 </div>
+
             `;
 
             return;
@@ -1327,10 +1522,13 @@ async function loadAuditLog() {
                         <div class="simulation-card">
 
                             <h3>
+
                                 🔐 ${escapeHTML(
                                     log.action
                                 )}
+
                             </h3>
+
 
                             <p>
 
@@ -1344,10 +1542,13 @@ async function loadAuditLog() {
 
                             </p>
 
+
                             <p>
+
                                 ${escapeHTML(
                                     log.details
                                 )}
+
                             </p>
 
                         </div>
@@ -1362,6 +1563,7 @@ async function loadAuditLog() {
             "Audit log loading error:",
             error
         );
+
 
         container.innerHTML = `
 
@@ -1614,7 +1816,9 @@ async function loadAgents() {
             card.innerHTML = `
 
                 <div class="agent-step">
-                    ${escapeHTML(info.step)}
+                    ${escapeHTML(
+                        info.step
+                    )}
                 </div>
 
 
@@ -1626,12 +1830,16 @@ async function loadAgents() {
                 <div class="agent-info">
 
                     <div class="agent-title">
-                        ${escapeHTML(info.title)}
+                        ${escapeHTML(
+                            info.title
+                        )}
                     </div>
 
 
                     <h3>
-                        ${escapeHTML(agent.agent)}
+                        ${escapeHTML(
+                            agent.agent
+                        )}
                     </h3>
 
 
@@ -1643,7 +1851,9 @@ async function loadAgents() {
 
 
                     <span class="agent-status">
-                        ${escapeHTML(agent.status)}
+                        ${escapeHTML(
+                            agent.status
+                        )}
                     </span>
 
                 </div>
@@ -1662,7 +1872,9 @@ async function loadAgents() {
         // ==================================================
 
         if (
-            Array.isArray(data.agents)
+            Array.isArray(
+                data.agents
+            )
         ) {
 
             data.agents.forEach(
@@ -1673,10 +1885,6 @@ async function loadAgents() {
                         index
                     );
 
-
-                    // ------------------------------------------
-                    // HUMAN APPROVAL AFTER SECURITY
-                    // ------------------------------------------
 
                     if (
                         agent.agent ===
@@ -1848,13 +2056,10 @@ async function loadAgents() {
 
                         addConnector();
 
+
                         return;
                     }
 
-
-                    // ------------------------------------------
-                    // NORMAL AGENT CONNECTOR
-                    // ------------------------------------------
 
                     if (
                         index <
@@ -1895,7 +2100,9 @@ async function loadAgents() {
 
 
             if (
-                Array.isArray(data.agents)
+                Array.isArray(
+                    data.agents
+                )
             ) {
 
                 data.agents.forEach(
@@ -1936,12 +2143,10 @@ async function loadAgents() {
 
                                     <span>
 
-                                        ${
-                                            escapeHTML(
-                                                info.description ||
-                                                ""
-                                            )
-                                        }
+                                        ${escapeHTML(
+                                            info.description ||
+                                            ""
+                                        )}
 
                                     </span>
 
@@ -1963,10 +2168,6 @@ async function loadAgents() {
                 );
             }
 
-
-            // ----------------------------------------------
-            // HUMAN APPROVAL DETAILS
-            // ----------------------------------------------
 
             html += `
 
@@ -2056,6 +2257,7 @@ async function resetSimulation() {
 
 
     if (!confirmed) {
+
         return;
     }
 
@@ -2071,7 +2273,9 @@ async function resetSimulation() {
             );
 
 
-        alert(data.message);
+        alert(
+            data.message
+        );
 
 
         await loadAll();
@@ -2083,7 +2287,9 @@ async function resetSimulation() {
             error
         );
 
-        alert(error.message);
+        alert(
+            error.message
+        );
     }
 }
 
@@ -2094,17 +2300,19 @@ async function resetSimulation() {
 
 async function loadAll() {
 
-    // Prevent two complete dashboard refreshes
-    // from running at exactly the same time.
     if (dashboardLoading) {
+
         return;
     }
 
+
     dashboardLoading = true;
+
 
     try {
 
         await checkSystemStatus();
+
 
         await Promise.allSettled([
 
@@ -2218,18 +2426,13 @@ function connectButtons() {
         );
 
 
-    // --------------------------------------------------
-    // Remove previous listeners by cloning buttons.
-    // This prevents duplicate actions if initialization
-    // happens more than once.
-    // --------------------------------------------------
-
     function connect(
         button,
         handler
     ) {
 
         if (!button) {
+
             return;
         }
 
@@ -2310,8 +2513,9 @@ function connectButtons() {
 
 function startAutoRefresh() {
 
-    // Stop an existing timer first.
-    if (refreshTimer !== null) {
+    if (
+        refreshTimer !== null
+    ) {
 
         clearInterval(
             refreshTimer
