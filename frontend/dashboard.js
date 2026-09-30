@@ -1,38 +1,27 @@
-```javascript
 const API = "https://aapatsetu-ai.onrender.com";
 
 let refreshTimer = null;
 let dashboardLoading = false;
 
 
-// ======================================================
-// API REQUEST
-// ======================================================
+// ============================================================
+// API HELPER
+// ============================================================
 
 async function getData(url, options = {}) {
-
-    const response = await fetch(
-        url,
-        options
-    );
+    const response = await fetch(url, options);
 
     if (!response.ok) {
-
-        let message =
-            `HTTP ${response.status}`;
+        let message = `HTTP ${response.status}`;
 
         try {
-
-            const error =
-                await response.json();
-
+            const errorData = await response.json();
             message =
-                error.detail ||
-                error.message ||
+                errorData.detail ||
+                errorData.message ||
                 message;
-
         } catch (error) {
-            // No JSON error response
+            // Response was not JSON
         }
 
         throw new Error(message);
@@ -42,17 +31,12 @@ async function getData(url, options = {}) {
 }
 
 
-// ======================================================
+// ============================================================
 // HTML SAFETY
-// ======================================================
+// ============================================================
 
 function escapeHTML(value) {
-
-    if (
-        value === null ||
-        value === undefined
-    ) {
-
+    if (value === null || value === undefined) {
         return "";
     }
 
@@ -65,988 +49,479 @@ function escapeHTML(value) {
 }
 
 
-// ======================================================
+// ============================================================
 // SYSTEM STATUS
-// ======================================================
+// ============================================================
 
 async function checkSystemStatus() {
+    const statusText = document.getElementById("system-status-text");
+    const statusDot = document.getElementById("system-status-dot");
 
-    const statusText =
-        document.getElementById(
-            "system-status-text"
-        );
-
-    const statusDot =
-        document.getElementById(
-            "system-status-dot"
-        );
-
-    const statusContainer =
-        document.getElementById(
-            "system-status"
-        );
-
-    if (
-        !statusText ||
-        !statusDot
-    ) {
-
+    if (!statusText || !statusDot) {
         return;
     }
 
     try {
+        const data = await getData(API);
 
-        const data =
-            await getData(API);
-
-        if (
-            data &&
-            data.status === "running"
-        ) {
-
-            statusText.textContent =
-                "System Online";
-
-            statusDot.className =
-                "status-dot online";
-
-            if (statusContainer) {
-
-                statusContainer.title =
-                    "AapatSetu AI backend is connected";
-            }
-
+        if (data && data.status === "running") {
+            statusText.textContent = "System Online";
+            statusDot.className = "status-dot online";
         } else {
-
-            statusText.textContent =
-                "System Warning";
-
-            statusDot.className =
-                "status-dot warning";
-
-            if (statusContainer) {
-
-                statusContainer.title =
-                    "Backend responded with an unexpected status";
-            }
+            statusText.textContent = "System Warning";
+            statusDot.className = "status-dot warning";
         }
-
     } catch (error) {
+        console.error("System status error:", error);
 
-        console.error(
-            "System status error:",
-            error
-        );
-
-        statusText.textContent =
-            "System Offline";
-
-        statusDot.className =
-            "status-dot offline";
-
-        if (statusContainer) {
-
-            statusContainer.title =
-                "Backend server is unavailable";
-        }
+        statusText.textContent = "System Offline";
+        statusDot.className = "status-dot offline";
     }
 }
 
 
-// ======================================================
+// ============================================================
 // INCIDENTS
-// ======================================================
+// ============================================================
 
 async function loadIncidents() {
-
-    const incidents =
-        await getData(
-            `${API}/incidents`
-        );
-
-    const count =
-        document.getElementById(
-            "incident-count"
-        );
-
-    if (count) {
-
-        count.textContent =
-            incidents.length;
-    }
-
-    const container =
-        document.getElementById(
-            "incidents-container"
-        );
+    const container = document.getElementById("incidents-container");
+    const count = document.getElementById("incident-count");
 
     if (!container) {
         return;
     }
 
-    container.innerHTML = "";
+    try {
+        const incidents = await getData(`${API}/incidents`);
 
-    if (
-        !Array.isArray(incidents) ||
-        incidents.length === 0
-    ) {
+        if (count) {
+            count.textContent = Array.isArray(incidents)
+                ? incidents.length
+                : 0;
+        }
 
-        container.innerHTML = `
-            <div class="plan-empty">
-                No active incidents.
-            </div>
-        `;
+        if (!Array.isArray(incidents) || incidents.length === 0) {
+            container.innerHTML = `
+                <div class="plan-empty">
+                    No active incidents.
+                </div>
+            `;
+            return;
+        }
 
-        return;
-    }
+        container.innerHTML = "";
 
-    incidents.forEach(
-        incident => {
+        incidents.forEach((incident) => {
+            let severityIcon = "🟢";
 
-            let severityIcon =
-                "🟢";
-
-            if (
-                incident.severity ===
-                "Critical"
-            ) {
-
-                severityIcon =
-                    "🔴";
-
-            } else if (
-                incident.severity ===
-                "High"
-            ) {
-
-                severityIcon =
-                    "🟠";
-
-            } else if (
-                incident.severity ===
-                "Medium"
-            ) {
-
-                severityIcon =
-                    "🟡";
+            if (incident.severity === "Critical") {
+                severityIcon = "🔴";
+            } else if (incident.severity === "High") {
+                severityIcon = "🟠";
+            } else if (incident.severity === "Medium") {
+                severityIcon = "🟡";
             }
 
-            const resources =
-                Array.isArray(
-                    incident.required_resources
-                )
+            const requiredResources =
+                Array.isArray(incident.required_resources)
                     ? incident.required_resources.join(", ")
                     : "Not specified";
 
-
             container.innerHTML += `
-
                 <div class="simulation-card">
-
                     <h3>
-                        🚨 ${escapeHTML(
-                            incident.id
-                        )}
+                        🚨 ${escapeHTML(incident.id)}
                     </h3>
 
                     <p>
                         <strong>Type:</strong>
-                        ${escapeHTML(
-                            incident.type
-                        )}
+                        ${escapeHTML(incident.type)}
                     </p>
 
                     <p>
                         <strong>Location:</strong>
-                        ${escapeHTML(
-                            incident.location
-                        )}
+                        ${escapeHTML(incident.location)}
                     </p>
 
                     <p>
                         <strong>Severity:</strong>
                         ${severityIcon}
-                        ${escapeHTML(
-                            incident.severity
-                        )}
+                        ${escapeHTML(incident.severity)}
                     </p>
 
                     <p>
-                        <strong>Resources:</strong>
-                        ${escapeHTML(
-                            resources
-                        )}
+                        <strong>Required Resources:</strong>
+                        ${escapeHTML(requiredResources)}
                     </p>
 
                     <p>
                         <strong>Status:</strong>
-                        ${escapeHTML(
-                            incident.status
-                        )}
+                        ${escapeHTML(incident.status)}
                     </p>
-
                 </div>
-
             `;
-        }
-    );
+        });
+    } catch (error) {
+        console.error("Incident loading error:", error);
+
+        container.innerHTML = `
+            <div class="plan-empty">
+                ⚠️ Unable to load incidents.
+                <p>${escapeHTML(error.message)}</p>
+            </div>
+        `;
+    }
 }
 
 
-// ======================================================
+// ============================================================
 // RESOURCES
-// ======================================================
+// ============================================================
 
 async function loadResources() {
-
-    const resources =
-        await getData(
-            `${API}/resources`
-        );
-
-    const count =
-        document.getElementById(
-            "resource-count"
-        );
-
-    if (count) {
-
-        count.textContent =
-            resources.length;
-    }
-
-    const container =
-        document.getElementById(
-            "resources-container"
-        );
+    const container = document.getElementById("resources-container");
+    const count = document.getElementById("resource-count");
 
     if (!container) {
         return;
     }
 
-    container.innerHTML = "";
+    try {
+        const resources = await getData(`${API}/resources`);
 
-    if (
-        !Array.isArray(resources) ||
-        resources.length === 0
-    ) {
+        if (count) {
+            count.textContent = Array.isArray(resources)
+                ? resources.length
+                : 0;
+        }
 
-        container.innerHTML = `
-            <div class="plan-empty">
-                No resources available.
-            </div>
-        `;
+        if (!Array.isArray(resources) || resources.length === 0) {
+            container.innerHTML = `
+                <div class="plan-empty">
+                    No resources available.
+                </div>
+            `;
+            return;
+        }
 
-        return;
-    }
+        container.innerHTML = "";
 
-    resources.forEach(
-        resource => {
-
-            const available =
-                resource.status ===
-                "available";
-
+        resources.forEach((resource) => {
             const status =
-                available
+                resource.status === "available"
                     ? "🟢 Available"
                     : "🔴 Unavailable";
 
-
             container.innerHTML += `
-
                 <div class="simulation-card">
-
                     <h3>
-                        🚑 ${escapeHTML(
-                            resource.id
-                        )}
+                        🚑 ${escapeHTML(resource.id)}
                     </h3>
 
                     <p>
                         <strong>Type:</strong>
-                        ${escapeHTML(
-                            resource.type
-                        )}
+                        ${escapeHTML(resource.type)}
                     </p>
 
                     <p>
                         <strong>Location:</strong>
-                        ${escapeHTML(
-                            resource.location
-                        )}
+                        ${escapeHTML(resource.location)}
                     </p>
 
                     <p>
                         <strong>Status:</strong>
                         ${status}
                     </p>
-
                 </div>
-
             `;
-        }
-    );
+        });
+    } catch (error) {
+        console.error("Resource loading error:", error);
+
+        container.innerHTML = `
+            <div class="plan-empty">
+                ⚠️ Unable to load resources.
+                <p>${escapeHTML(error.message)}</p>
+            </div>
+        `;
+    }
 }
 
 
-// ======================================================
+// ============================================================
 // PLAN
-// ======================================================
+// ============================================================
 
 async function loadPlan() {
+    const container = document.getElementById("plan-container");
+    const versionElement = document.getElementById("plan-version");
+    const statusElement = document.getElementById("plan-status");
+
+    if (!container) {
+        return;
+    }
 
     try {
-
-        const data =
-            await getData(
-                `${API}/plan`
-            );
-
-        const container =
-            document.getElementById(
-                "plan-container"
-            );
-
-        const planVersion =
-            document.getElementById(
-                "plan-version"
-            );
-
-        const planStatus =
-            document.getElementById(
-                "plan-status"
-            );
-
-
-        if (!container) {
-            return;
-        }
-
-
-        const currentPlan = data;
-
+        const currentPlan = await getData(`${API}/plan`);
 
         if (!currentPlan) {
-
             container.innerHTML = `
                 <div class="plan-empty">
                     No response plan available.
                 </div>
             `;
-
-
-            if (planVersion) {
-
-                planVersion.textContent =
-                    "N/A";
-            }
-
-
-            if (planStatus) {
-
-                planStatus.textContent =
-                    "No Plan";
-            }
-
-
             return;
         }
 
+        const plan = Array.isArray(currentPlan.plan)
+            ? currentPlan.plan
+            : [];
 
-        const plan =
-            Array.isArray(
-                currentPlan.plan
-            )
-                ? currentPlan.plan
-                : [];
+        const version = currentPlan.version || "V1";
+        const status = currentPlan.status || "Unknown";
 
-
-        const version =
-            currentPlan.version ||
-            "V1";
-
-
-        const status =
-            currentPlan.status ||
-            "Unknown";
-
-
-        // ==================================================
-        // UPDATE TOP DASHBOARD STATISTICS
-        // ==================================================
-
-        if (planVersion) {
-
-            planVersion.textContent =
-                version;
+        if (versionElement) {
+            versionElement.textContent = version;
         }
 
-
-        if (planStatus) {
-
-            planStatus.textContent =
-                status;
+        if (statusElement) {
+            statusElement.textContent = status;
         }
 
+        const assignedCount = plan.filter(
+            (item) => item.status === "Assigned"
+        ).length;
 
-        // ==================================================
-        // PLAN STATUS CLASS
-        // ==================================================
+        const attentionCount = plan.filter(
+            (item) => item.status === "Human Attention Required"
+        ).length;
 
-        let statusClass =
-            "pending";
+        let planStatusClass = "pending";
 
-
-        if (
-            status === "Active"
-        ) {
-
-            statusClass =
-                "active";
-
-        } else if (
-            status === "Outdated"
-        ) {
-
-            statusClass =
-                "outdated";
-
-        } else if (
-            status === "Rejected"
-        ) {
-
-            statusClass =
-                "rejected";
+        if (status === "Active") {
+            planStatusClass = "active";
+        } else if (status === "Outdated") {
+            planStatusClass = "outdated";
+        } else if (status === "Rejected") {
+            planStatusClass = "rejected";
         }
 
+        let assignmentsHTML = "";
 
-        // ==================================================
-        // PLAN COUNTS
-        // ==================================================
+        if (plan.length === 0) {
+            assignmentsHTML = `
+                <div class="plan-empty">
+                    No assignments available.
+                </div>
+            `;
+        } else {
+            assignmentsHTML = plan.map((assignment) => {
+                const isAttention =
+                    assignment.status === "Human Attention Required";
 
-        const assignedCount =
-            plan.filter(
-                item =>
-                    item.status ===
-                    "Assigned"
-            ).length;
+                const cardClass =
+                    isAttention ? "attention" : "assigned";
 
+                const statusClass =
+                    isAttention ? "attention" : "assigned";
 
-        const attentionCount =
-            plan.filter(
-                item =>
-                    item.status ===
-                    "Human Attention Required"
-            ).length;
+                const icon =
+                    isAttention ? "⚠️" : "🟢";
 
+                const resource =
+                    assignment.resource_id || "No Resource";
 
-        // ==================================================
-        // SEVERITY CLASS
-        // ==================================================
+                const reason =
+                    assignment.reason || "No reason provided.";
 
-        function getSeverityClass(
-            severity
-        ) {
+                return `
+                    <div class="plan-assignment ${cardClass}">
 
-            if (!severity) {
+                        <div class="plan-assignment-header">
 
-                return "low";
-            }
+                            <div class="plan-resource">
+                                🚑
+                                ${escapeHTML(resource)}
+                                →
+                                ${escapeHTML(assignment.incident_id)}
+                            </div>
 
-            return String(
-                severity
-            ).toLowerCase();
+                            <div class="plan-assignment-status ${statusClass}">
+                                ${icon}
+                                ${escapeHTML(assignment.status)}
+                            </div>
+
+                        </div>
+
+                        <div class="plan-incident">
+                            <strong>
+                                ${escapeHTML(assignment.incident_type)}
+                            </strong>
+                        </div>
+
+                        <div class="plan-location">
+                            📍
+                            ${escapeHTML(assignment.location)}
+                        </div>
+
+                        <div class="plan-reason">
+                            <strong>Why:</strong>
+                            ${escapeHTML(reason)}
+                        </div>
+
+                    </div>
+                `;
+            }).join("");
         }
-
-
-        // ==================================================
-        // PLAN DISPLAY
-        // ==================================================
 
         container.innerHTML = `
-
             <div class="plan-summary">
 
                 <div class="plan-summary-card">
-
-                    <span>
-                        Plan Version
-                    </span>
-
-                    <strong
-                        class="plan-version"
-                    >
-                        ${escapeHTML(
-                            version
-                        )}
+                    <span>Plan Version</span>
+                    <strong class="plan-version">
+                        ${escapeHTML(version)}
                     </strong>
-
                 </div>
 
-
                 <div class="plan-summary-card">
-
-                    <span>
-                        Plan Status
-                    </span>
-
-                    <strong
-                        class="plan-status ${statusClass}"
-                    >
-                        ${escapeHTML(
-                            status
-                        )}
+                    <span>Plan Status</span>
+                    <strong class="plan-status ${planStatusClass}">
+                        ${escapeHTML(status)}
                     </strong>
-
                 </div>
 
-
                 <div class="plan-summary-card">
-
-                    <span>
-                        Assigned
-                    </span>
-
+                    <span>Assigned</span>
                     <strong>
                         ${assignedCount}
                     </strong>
-
                 </div>
 
-
                 <div class="plan-summary-card">
-
-                    <span>
-                        Human Attention
-                    </span>
-
+                    <span>Human Attention</span>
                     <strong>
                         ${attentionCount}
                     </strong>
-
                 </div>
 
             </div>
-
 
             <div class="plan-assignments">
-
-                ${
-                    plan.length === 0
-
-                    ?
-
-                    `
-                    <div class="plan-empty">
-                        No assignments available.
-                    </div>
-                    `
-
-                    :
-
-                    plan.map(
-                        assignment => {
-
-                            const isAttention =
-                                assignment.status ===
-                                "Human Attention Required";
-
-
-                            const cardClass =
-                                isAttention
-                                    ? "attention"
-                                    : "assigned";
-
-
-                            const assignmentStatusClass =
-                                isAttention
-                                    ? "attention"
-                                    : "assigned";
-
-
-                            const statusIcon =
-                                isAttention
-                                    ? "⚠️"
-                                    : "🟢";
-
-
-                            const resource =
-                                assignment.resource_id
-                                ||
-                                "No Resource";
-
-
-                            const reason =
-                                assignment.reason
-                                ||
-                                "No reason provided.";
-
-
-                            const severity =
-                                assignment.severity
-                                ||
-                                "Low";
-
-
-                            return `
-
-                                <div
-                                    class="
-                                        plan-assignment
-                                        ${cardClass}
-                                    "
-                                >
-
-                                    <div
-                                        class="
-                                            plan-assignment-header
-                                        "
-                                    >
-
-                                        <div
-                                            class="
-                                                plan-resource
-                                            "
-                                        >
-
-                                            🚑
-                                            ${escapeHTML(
-                                                resource
-                                            )}
-
-                                            →
-
-                                            ${escapeHTML(
-                                                assignment.incident_id
-                                            )}
-
-                                        </div>
-
-
-                                        <div
-                                            class="
-                                                plan-assignment-status
-                                                ${assignmentStatusClass}
-                                            "
-                                        >
-
-                                            ${statusIcon}
-
-                                            ${escapeHTML(
-                                                assignment.status
-                                            )}
-
-                                        </div>
-
-                                    </div>
-
-
-                                    <div
-                                        class="
-                                            plan-incident
-                                        "
-                                    >
-
-                                        <strong>
-
-                                            ${escapeHTML(
-                                                assignment.incident_type
-                                            )}
-
-                                        </strong>
-
-                                    </div>
-
-
-                                    <div
-                                        class="
-                                            plan-location
-                                        "
-                                    >
-
-                                        📍
-
-                                        ${escapeHTML(
-                                            assignment.location
-                                        )}
-
-                                    </div>
-
-
-                                    <span
-                                        class="
-                                            plan-severity
-                                            ${getSeverityClass(
-                                                severity
-                                            )}
-                                        "
-                                    >
-
-                                        ${escapeHTML(
-                                            severity
-                                        )}
-
-                                    </span>
-
-
-                                    <div
-                                        class="
-                                            plan-reason
-                                        "
-                                    >
-
-                                        <strong>
-                                            Why:
-                                        </strong>
-
-                                        ${escapeHTML(
-                                            reason
-                                        )}
-
-                                    </div>
-
-                                </div>
-
-                            `;
-                        }
-                    ).join("")
-                }
-
+                ${assignmentsHTML}
             </div>
-
         `;
-
     } catch (error) {
+        console.error("Plan loading error:", error);
 
-        console.error(
-            "Plan loading error:",
-            error
-        );
-
-
-        const container =
-            document.getElementById(
-                "plan-container"
-            );
-
-
-        if (container) {
-
-            container.innerHTML = `
-
-                <div class="plan-empty">
-
-                    ⚠️ Unable to load response plan.
-
-                    <p>
-                        ${escapeHTML(
-                            error.message
-                        )}
-                    </p>
-
-                </div>
-
-            `;
-        }
-
-
-        const planVersion =
-            document.getElementById(
-                "plan-version"
-            );
-
-
-        const planStatus =
-            document.getElementById(
-                "plan-status"
-            );
-
-
-        if (planVersion) {
-
-            planVersion.textContent =
-                "Error";
-        }
-
-
-        if (planStatus) {
-
-            planStatus.textContent =
-                "Unavailable";
-        }
+        container.innerHTML = `
+            <div class="plan-empty">
+                ⚠️ Unable to load response plan.
+                <p>${escapeHTML(error.message)}</p>
+            </div>
+        `;
     }
 }
 
 
-// ======================================================
+// ============================================================
 // APPROVE PLAN
-// ======================================================
+// ============================================================
 
 async function approvePlan() {
-
     try {
+        const data = await getData(`${API}/approve-plan`, {
+            method: "POST"
+        });
 
-        const data =
-            await getData(
-                `${API}/approve-plan`,
-                {
-                    method: "POST"
-                }
-            );
-
-        alert(
-            data.message
-        );
+        alert(data.message || "Plan approved successfully.");
 
         await loadAll();
-
     } catch (error) {
-
-        console.error(
-            "Approval error:",
-            error
-        );
-
-        alert(
-            error.message
-        );
+        console.error("Approval error:", error);
+        alert(error.message);
     }
 }
 
 
-// ======================================================
+// ============================================================
 // REJECT PLAN
-// ======================================================
+// ============================================================
 
 async function rejectPlan() {
-
-    const confirmed =
-        confirm(
-            "Are you sure you want to reject the current plan?"
-        );
-
+    const confirmed = confirm(
+        "Are you sure you want to reject the current plan?"
+    );
 
     if (!confirmed) {
-
         return;
     }
 
-
     try {
+        const data = await getData(`${API}/reject-plan`, {
+            method: "POST"
+        });
 
-        const data =
-            await getData(
-                `${API}/reject-plan`,
-                {
-                    method: "POST"
-                }
-            );
-
-
-        alert(
-            data.message
-        );
-
+        alert(data.message || "Plan rejected.");
 
         await loadAll();
-
     } catch (error) {
-
-        console.error(
-            "Rejection error:",
-            error
-        );
-
-        alert(
-            error.message
-        );
+        console.error("Rejection error:", error);
+        alert(error.message);
     }
 }
 
 
-// ======================================================
+// ============================================================
 // REPLAN
-// ======================================================
+// ============================================================
 
 async function replan() {
-
     try {
+        const data = await getData(`${API}/replan`, {
+            method: "POST"
+        });
 
-        const data =
-            await getData(
-                `${API}/replan`,
-                {
-                    method: "POST"
-                }
-            );
-
-
-        alert(
-            data.message
-        );
-
+        alert(data.message || "New plan generated.");
 
         await loadAll();
-
     } catch (error) {
-
-        console.error(
-            "Re-planning error:",
-            error
-        );
-
-        alert(
-            error.message
-        );
+        console.error("Re-planning error:", error);
+        alert(error.message);
     }
 }
 
 
-// ======================================================
+// ============================================================
 // AI ANALYSIS
-// ======================================================
+// ============================================================
 
 async function aiAnalysis() {
-
-    const box =
-        document.getElementById(
-            "ai-analysis"
-        );
-
+    const box = document.getElementById("ai-analysis");
 
     if (!box) {
-
         return;
     }
-
 
     box.innerHTML =
         "🤖 AI is analyzing the emergency situation...";
 
-
     try {
-
-        const data =
-            await getData(
-                `${API}/ai/explain-plan`
-            );
-
+        const data = await getData(
+            `${API}/ai/explain-plan`
+        );
 
         if (
             !data.ai_analysis ||
             !data.ai_analysis.summary
         ) {
-
             box.innerHTML =
                 "No AI explanation was returned.";
-
             return;
         }
 
-
         box.innerHTML = `
-
             <strong>
                 🤖 AI Situation Analysis
             </strong>
@@ -1054,201 +529,129 @@ async function aiAnalysis() {
             <hr>
 
             <div>
-
                 ${formatAIText(
                     data.ai_analysis.summary
                 )}
-
             </div>
-
         `;
-
     } catch (error) {
-
-        console.error(
-            "AI error:",
-            error
-        );
-
+        console.error("AI analysis error:", error);
 
         box.innerHTML = `
-
             <strong>
                 ❌ AI Analysis Failed
             </strong>
 
             <p>
-                ${escapeHTML(
-                    error.message
-                )}
+                ${escapeHTML(error.message)}
             </p>
-
         `;
     }
 }
 
 
-// ======================================================
-// FORMAT AI TEXT
-// ======================================================
+// ============================================================
+// AI TEXT FORMAT
+// ============================================================
 
 function formatAIText(text) {
-
-    return escapeHTML(
-        text
-    ).replace(
-        /\n/g,
-        "<br>"
-    );
+    return escapeHTML(text).replace(/\n/g, "<br>");
 }
 
 
-// ======================================================
+// ============================================================
 // NEW EMERGENCY
-// ======================================================
+// ============================================================
 
 async function newEmergency() {
-
     try {
-
-        const data =
-            await getData(
-                `${API}/simulate/new-emergency`,
-                {
-                    method: "POST"
-                }
-            );
-
-
-        alert(
-            data.message
+        const data = await getData(
+            `${API}/simulate/new-emergency`,
+            {
+                method: "POST"
+            }
         );
 
+        alert(data.message || "New emergency simulated.");
 
         await loadAll();
-
     } catch (error) {
-
-        console.error(
-            "New emergency error:",
-            error
-        );
-
-        alert(
-            error.message
-        );
+        console.error("New emergency error:", error);
+        alert(error.message);
     }
 }
 
 
-// ======================================================
+// ============================================================
 // RESOURCE FAILURE
-// ======================================================
+// ============================================================
 
 async function resourceFailure() {
-
     try {
-
-        const data =
-            await getData(
-                `${API}/simulate/resource-failure`,
-                {
-                    method: "POST"
-                }
-            );
-
-
-        alert(
-            data.message
+        const data = await getData(
+            `${API}/simulate/resource-failure`,
+            {
+                method: "POST"
+            }
         );
 
+        alert(data.message || "Resource failure simulated.");
 
         await loadAll();
-
     } catch (error) {
-
-        console.error(
-            "Resource failure error:",
-            error
-        );
-
-        alert(
-            error.message
-        );
+        console.error("Resource failure error:", error);
+        alert(error.message);
     }
 }
 
 
-// ======================================================
+// ============================================================
 // INCREASE SEVERITY
-// ======================================================
+// ============================================================
 
 async function increaseSeverity() {
-
     try {
-
-        const data =
-            await getData(
-                `${API}/simulate/increase-severity`,
-                {
-                    method: "POST"
-                }
-            );
-
-
-        alert(
-            data.message
+        const data = await getData(
+            `${API}/simulate/increase-severity`,
+            {
+                method: "POST"
+            }
         );
 
+        alert(
+            data.message ||
+            "Incident severity increased."
+        );
 
         await loadAll();
-
     } catch (error) {
-
         console.error(
             "Severity increase error:",
             error
         );
 
-        alert(
-            error.message
-        );
+        alert(error.message);
     }
 }
 
 
-// ======================================================
+// ============================================================
 // MONITOR
-// ======================================================
+// ============================================================
 
 async function loadMonitor() {
-
     const container =
-        document.getElementById(
-            "monitor-container"
-        );
-
+        document.getElementById("monitor-container");
 
     if (!container) {
-
         return;
     }
 
-
     try {
+        const data = await getData(`${API}/monitor`);
 
-        const data =
-            await getData(
-                `${API}/monitor`
-            );
-
-
-        if (
-            !data.changes_detected
-        ) {
-
+        if (!data.changes_detected) {
             container.innerHTML = `
-
                 <strong>
                     🟢 No Changes Detected
                 </strong>
@@ -1256,15 +659,12 @@ async function loadMonitor() {
                 <p>
                     Emergency situation is stable.
                 </p>
-
             `;
 
             return;
         }
 
-
         container.innerHTML = `
-
             <strong>
                 ⚠️ Changes Detected
             </strong>
@@ -1273,690 +673,412 @@ async function loadMonitor() {
                 The monitoring system detected
                 changes requiring attention.
             </p>
-
         `;
 
-
-        if (
-            !Array.isArray(
-                data.changes
-            )
-        ) {
-
+        if (!Array.isArray(data.changes)) {
             return;
         }
 
+        data.changes.forEach((change) => {
+            container.innerHTML += `
+                <div class="simulation-card">
 
-        data.changes.forEach(
-            change => {
+                    <h3>
+                        ${escapeHTML(change.type)}
+                    </h3>
 
-                container.innerHTML += `
+                    <p>
+                        ${escapeHTML(
+                            change.reason || ""
+                        )}
+                    </p>
 
-                    <div class="simulation-card">
+                    <p>
+                        <strong>
+                            Action:
+                        </strong>
 
-                        <h3>
-                            ${escapeHTML(
-                                change.type
-                            )}
-                        </h3>
+                        ${escapeHTML(
+                            change.action || ""
+                        )}
+                    </p>
 
-                        <p>
-                            ${escapeHTML(
-                                change.reason || ""
-                            )}
-                        </p>
-
-                        <p>
-
-                            <strong>
-                                Action:
-                            </strong>
-
-                            ${escapeHTML(
-                                change.action || ""
-                            )}
-
-                        </p>
-
-                    </div>
-
-                `;
-            }
-        );
-
+                </div>
+            `;
+        });
     } catch (error) {
-
         console.error(
             "Monitor loading error:",
             error
         );
 
-
         container.innerHTML = `
-
             <strong>
                 ⚠️ Monitor Unavailable
             </strong>
 
             <p>
-                ${escapeHTML(
-                    error.message
-                )}
+                ${escapeHTML(error.message)}
             </p>
-
         `;
     }
 }
 
 
-// ======================================================
-// HISTORY
-// ======================================================
+// ============================================================
+// PLAN HISTORY
+// ============================================================
 
 async function loadHistory() {
-
     const container =
-        document.getElementById(
-            "history-container"
-        );
-
+        document.getElementById("history-container");
 
     if (!container) {
-
         return;
     }
 
-
     try {
-
         const history =
-            await getData(
-                `${API}/plan-history`
-            );
-
-
-        container.innerHTML = "";
-
+            await getData(`${API}/plan-history`);
 
         if (
             !Array.isArray(history) ||
             history.length === 0
         ) {
-
             container.innerHTML = `
-
                 <div class="plan-empty">
                     No plan history available.
                 </div>
-
             `;
 
             return;
         }
 
+        container.innerHTML = "";
 
-        history.forEach(
-            plan => {
+        history.forEach((plan) => {
+            container.innerHTML += `
+                <div class="simulation-card">
 
-                container.innerHTML += `
+                    <h3>
+                        📋 ${escapeHTML(plan.version)}
+                    </h3>
 
-                    <div class="simulation-card">
+                    <p>
+                        <strong>
+                            Status:
+                        </strong>
 
-                        <h3>
-                            📋 ${escapeHTML(
-                                plan.version
-                            )}
-                        </h3>
+                        ${escapeHTML(plan.status)}
+                    </p>
 
-                        <p>
+                    <p>
+                        <strong>
+                            Reason:
+                        </strong>
 
-                            <strong>
-                                Status:
-                            </strong>
+                        ${escapeHTML(
+                            plan.change_reason || ""
+                        )}
+                    </p>
 
-                            ${escapeHTML(
-                                plan.status
-                            )}
-
-                        </p>
-
-                        <p>
-
-                            <strong>
-                                Reason:
-                            </strong>
-
-                            ${escapeHTML(
-                                plan.change_reason
-                            )}
-
-                        </p>
-
-                    </div>
-
-                `;
-            }
-        );
-
+                </div>
+            `;
+        });
     } catch (error) {
-
         console.error(
             "History loading error:",
             error
         );
 
-
         container.innerHTML = `
-
             <div class="plan-empty">
-
                 ⚠️ Unable to load plan history.
 
+                <p>
+                    ${escapeHTML(error.message)}
+                </p>
             </div>
-
         `;
     }
 }
 
 
-// ======================================================
+// ============================================================
 // AUDIT LOG
-// ======================================================
+// ============================================================
 
 async function loadAuditLog() {
-
     const container =
-        document.getElementById(
-            "audit-container"
-        );
-
+        document.getElementById("audit-container");
 
     if (!container) {
-
         return;
     }
 
-
     try {
-
         const data =
-            await getData(
-                `${API}/audit-log`
-            );
-
-
-        container.innerHTML = "";
-
+            await getData(`${API}/audit-log`);
 
         const logs =
-            data.audit_log || [];
+            Array.isArray(data.audit_log)
+                ? data.audit_log
+                : [];
 
-
-        if (
-            !Array.isArray(logs) ||
-            logs.length === 0
-        ) {
-
+        if (logs.length === 0) {
             container.innerHTML = `
-
                 <div class="plan-empty">
-
                     No audit events recorded.
-
                 </div>
-
             `;
 
             return;
         }
 
+        container.innerHTML = "";
 
-        logs
-            .slice()
-            .reverse()
-            .forEach(
-                log => {
+        logs.slice().reverse().forEach((log) => {
+            container.innerHTML += `
+                <div class="simulation-card">
 
-                    container.innerHTML += `
+                    <h3>
+                        🔐 ${escapeHTML(
+                            log.action || "Audit Event"
+                        )}
+                    </h3>
 
-                        <div class="simulation-card">
+                    <p>
+                        <strong>
+                            Time:
+                        </strong>
 
-                            <h3>
+                        ${escapeHTML(
+                            log.timestamp || ""
+                        )}
+                    </p>
 
-                                🔐 ${escapeHTML(
-                                    log.action
-                                )}
+                    <p>
+                        ${escapeHTML(
+                            log.details || ""
+                        )}
+                    </p>
 
-                            </h3>
-
-
-                            <p>
-
-                                <strong>
-                                    Time:
-                                </strong>
-
-                                ${escapeHTML(
-                                    log.timestamp
-                                )}
-
-                            </p>
-
-
-                            <p>
-
-                                ${escapeHTML(
-                                    log.details
-                                )}
-
-                            </p>
-
-                        </div>
-
-                    `;
-                }
-            );
-
+                </div>
+            `;
+        });
     } catch (error) {
-
         console.error(
             "Audit log loading error:",
             error
         );
 
-
         container.innerHTML = `
-
             <div class="plan-empty">
-
                 ⚠️ Unable to load audit log.
 
+                <p>
+                    ${escapeHTML(error.message)}
+                </p>
             </div>
-
         `;
     }
 }
 
 
-// ======================================================
+// ============================================================
 // MULTI-AGENT STATUS
-// ======================================================
+// ============================================================
 
 async function loadAgents() {
+    const container =
+        document.getElementById("agents-container");
+
+    const details =
+        document.getElementById("agent-details");
+
+    if (!container) {
+        return;
+    }
 
     try {
-
-        // --------------------------------------------------
-        // GET AGENT STATUS
-        // --------------------------------------------------
-
         const data =
-            await getData(
-                `${API}/agents/status`
-            );
-
-
-        // --------------------------------------------------
-        // GET CURRENT PLAN
-        // --------------------------------------------------
-
-        const currentPlan =
-            await getData(
-                `${API}/plan`
-            );
-
-
-        const container =
-            document.getElementById(
-                "agents-container"
-            );
-
-
-        const details =
-            document.getElementById(
-                "agent-details"
-            );
-
-
-        if (!container) {
-
-            console.warn(
-                "agents-container not found."
-            );
-
-            return;
-        }
-
+            await getData(`${API}/agents/status`);
 
         container.innerHTML = "";
 
-
-        // ==================================================
-        // AGENT INFORMATION
-        // ==================================================
-
         const agentInfo = {
-
             "Assessment Agent": {
-
                 icon: "🧠",
-
-                title: "Assess",
-
-                description:
-                    "Assesses emergency incidents and their resource requirements."
+                title: "Assess"
             },
-
 
             "Planning Agent": {
-
                 icon: "📋",
-
-                title: "Allocate",
-
-                description:
-                    "Coordinates deterministic resource allocation based on incident priority."
+                title: "Allocate"
             },
-
 
             "Security/SISO Agent": {
-
                 icon: "🔐",
-
-                title: "Validate",
-
-                description:
-                    "Validates incidents, resources and response plans for security issues."
+                title: "Validate"
             },
-
 
             "Human Review": {
-
                 icon: "👤",
-
-                title: "Human Review",
-
-                description:
-                    "Allows an emergency operator to approve, reject or modify a response plan."
+                title: "Human Review"
             },
-
 
             "Monitoring Agent": {
-
                 icon: "👁️",
-
-                title: "Monitor",
-
-                description:
-                    "Monitors emergencies, resources and severity changes."
+                title: "Monitor"
             },
-
 
             "Re-planning Agent": {
-
                 icon: "🔄",
-
-                title: "Re-plan",
-
-                description:
-                    "Triggers a new response plan when emergency conditions change."
+                title: "Re-plan"
             },
 
-
             "Command Coordinator": {
-
                 icon: "🎯",
-
-                title: "Coordinate",
-
-                description:
-                    "Coordinates the complete multi-agent emergency response workflow."
+                title: "Coordinate"
             }
-
         };
 
 
-        // ==================================================
-        // STATUS CLASS
-        // ==================================================
-
-        function getStatusClass(
-            status
-        ) {
-
+        function getAgentStatusClass(status) {
             if (
                 status === "Passed" ||
                 status === "Completed" ||
-                status === "Approved"
+                status === "Approved" ||
+                status === "Plan Active"
             ) {
-
                 return "agent-success";
             }
-
 
             if (
                 status === "Warning" ||
                 status === "Change Detected" ||
-                status === "Plan Outdated"
+                status === "Plan Outdated" ||
+                status === "Waiting for Human Approval" ||
+                status === "Rejected" ||
+                status === "Security Warning"
             ) {
-
                 return "agent-warning";
             }
-
 
             if (
                 status === "Triggered" ||
                 status === "Re-planning Required"
             ) {
-
                 return "agent-triggered";
             }
 
-
-            if (
-                status === "Monitoring"
-            ) {
-
+            if (status === "Monitoring") {
                 return "agent-monitoring";
             }
-
-
-            if (
-                status ===
-                "Waiting for Human Approval"
-            ) {
-
-                return "agent-warning";
-            }
-
-
-            if (
-                status === "Rejected"
-            ) {
-
-                return "agent-warning";
-            }
-
 
             return "agent-normal";
         }
 
 
-        // ==================================================
-        // WORKFLOW CONNECTOR
-        // ==================================================
-
-        function addConnector() {
-
-            const connector =
-                document.createElement(
-                    "div"
-                );
-
-
-            connector.className =
-                "agent-connector";
-
-
-            connector.innerHTML = `
-                <span>↓</span>
-            `;
-
-
-            container.appendChild(
-                connector
-            );
-        }
-
-
-        // ==================================================
-        // CREATE AGENT CARD
-        // ==================================================
-
-        function createAgentCard(
-            agent,
-            index
-        ) {
-
+        function createAgentCard(agent, index) {
             const info =
-                agentInfo[
-                    agent.agent
-                ] || {
-
+                agentInfo[agent.agent] || {
                     icon: "🤖",
-
-                    title: "Process",
-
-                    description:
-                        agent.role ||
-                        "Emergency response agent."
+                    title: "Process"
                 };
 
-
-            const statusClass =
-                getStatusClass(
-                    agent.status
-                );
-
-
             const card =
-                document.createElement(
-                    "div"
-                );
-
+                document.createElement("div");
 
             card.className =
-                `agent-card ${statusClass}`;
-
+                `agent-card ${getAgentStatusClass(
+                    agent.status
+                )}`;
 
             card.innerHTML = `
-
                 <div class="agent-step">
                     ${index + 1}
                 </div>
-
 
                 <div class="agent-icon">
                     ${info.icon}
                 </div>
 
-
                 <div class="agent-info">
 
                     <div class="agent-title">
-                        ${escapeHTML(
-                            info.title
-                        )}
+                        ${escapeHTML(info.title)}
                     </div>
 
-
                     <h3>
-                        ${escapeHTML(
-                            agent.agent
-                        )}
+                        ${escapeHTML(agent.agent)}
                     </h3>
-
 
                     <p class="agent-description">
                         ${escapeHTML(
-                            agent.role ||
-                            info.description
+                            agent.role || ""
                         )}
                     </p>
 
-
                     <span class="agent-status">
-                        ${escapeHTML(
-                            agent.status
-                        )}
+                        ${escapeHTML(agent.status)}
                     </span>
 
                 </div>
-
             `;
 
-
-            container.appendChild(
-                card
-            );
+            container.appendChild(card);
         }
 
 
-        // ==================================================
-        // CREATE AGENT WORKFLOW
-        // ==================================================
+        function createConnector() {
+            const connector =
+                document.createElement("div");
 
-        if (
-            Array.isArray(
-                data.agents
-            )
-        ) {
+            connector.className =
+                "agent-connector";
 
-            data.agents.forEach(
-                (agent, index) => {
+            connector.innerHTML = "<span>↓</span>";
 
-                    createAgentCard(
-                        agent,
-                        index
-                    );
+            container.appendChild(connector);
+        }
 
 
-                    if (
-                        index <
-                        data.agents.length - 1
-                    ) {
+        if (Array.isArray(data.agents)) {
+            data.agents.forEach((agent, index) => {
 
-                        addConnector();
-                    }
+                createAgentCard(
+                    agent,
+                    index
+                );
 
+                if (
+                    index <
+                    data.agents.length - 1
+                ) {
+                    createConnector();
                 }
-            );
+            });
         }
 
 
-        // ==================================================
-        // COMMAND COORDINATOR SUMMARY
-        // ==================================================
+        const summary =
+            document.createElement("div");
 
-        const workflowSummary =
-            document.createElement(
-                "div"
-            );
-
-
-        workflowSummary.className =
+        summary.className =
             "simulation-card";
 
+        const workflow =
+            Array.isArray(data.workflow)
+                ? data.workflow.join(" → ")
+                : "Not available";
 
-        workflowSummary.innerHTML = `
-
+        summary.innerHTML = `
             <h3>
                 🎯 Command Coordinator
             </h3>
 
-
             <p>
-
                 <strong>
                     Workflow Status:
                 </strong>
@@ -1965,216 +1087,95 @@ async function loadAgents() {
                     data.workflow_status ||
                     "Unknown"
                 )}
-
             </p>
 
-
             <p>
-
                 <strong>
                     Plan Version:
                 </strong>
 
                 ${escapeHTML(
                     data.plan_version ||
-                    currentPlan.version ||
                     "Unknown"
                 )}
-
             </p>
 
-
             <p>
-
                 <strong>
                     Plan Status:
                 </strong>
 
                 ${escapeHTML(
                     data.plan_status ||
-                    currentPlan.status ||
                     "Unknown"
                 )}
-
             </p>
 
-
             <p>
-
                 <strong>
                     Workflow:
                 </strong>
 
-                ${escapeHTML(
-                    Array.isArray(data.workflow)
-                        ? data.workflow.join(
-                            " → "
-                        )
-                        : "Not available"
-                )}
-
+                ${escapeHTML(workflow)}
             </p>
-
         `;
 
+        container.appendChild(summary);
 
-        container.appendChild(
-            workflowSummary
-        );
-
-
-        // ==================================================
-        // AGENT DETAILS
-        // ==================================================
 
         if (details) {
-
-            let html = `
-
+            let detailsHTML = `
                 <div class="agent-details-title">
-
                     🤖 Multi-Agent Activity
-
                 </div>
-
 
                 <p class="agent-details-subtitle">
-
                     Current status of the emergency
                     response coordination workflow.
-
                 </p>
-
-
-                <div
-                    class="
-                        agent-detail-row
-                    "
-                >
-
-                    <div>
-
-                        <strong>
-                            🎯 Workflow Status
-                        </strong>
-
-                        <br>
-
-                        <span>
-                            Command Coordinator status
-                            for the current response workflow.
-                        </span>
-
-                    </div>
-
-
-                    <strong>
-                        ${escapeHTML(
-                            data.workflow_status ||
-                            "Unknown"
-                        )}
-                    </strong>
-
-                </div>
-
             `;
 
+            if (Array.isArray(data.agents)) {
+                data.agents.forEach((agent) => {
+                    const info =
+                        agentInfo[agent.agent] || {};
 
-            // ------------------------------------------------
-            // AGENT DETAILS
-            // ------------------------------------------------
+                    detailsHTML += `
+                        <div class="agent-detail-row">
 
-            if (
-                Array.isArray(
-                    data.agents
-                )
-            ) {
-
-                data.agents.forEach(
-                    agent => {
-
-                        const info =
-                            agentInfo[
-                                agent.agent
-                            ] || {};
-
-
-                        html += `
-
-                            <div
-                                class="
-                                    agent-detail-row
-                                "
-                            >
-
-                                <div>
-
-                                    <strong>
-
-                                        ${
-                                            info.icon ||
-                                            "🤖"
-                                        }
-
-                                        ${escapeHTML(
-                                            agent.agent
-                                        )}
-
-                                    </strong>
-
-
-                                    <br>
-
-
-                                    <span>
-
-                                        ${escapeHTML(
-                                            agent.role ||
-                                            info.description ||
-                                            ""
-                                        )}
-
-                                    </span>
-
-                                </div>
-
-
+                            <div>
                                 <strong>
-
+                                    ${info.icon || "🤖"}
                                     ${escapeHTML(
-                                        agent.status
+                                        agent.agent
                                     )}
-
                                 </strong>
 
+                                <br>
+
+                                <span>
+                                    ${escapeHTML(
+                                        agent.role || ""
+                                    )}
+                                </span>
                             </div>
 
-                        `;
-                    }
-                );
+                            <strong>
+                                ${escapeHTML(
+                                    agent.status
+                                )}
+                            </strong>
+
+                        </div>
+                    `;
+                });
             }
 
-
-            // ------------------------------------------------
-            // WORKFLOW
-            // ------------------------------------------------
-
-            if (
-                Array.isArray(
-                    data.workflow
-                )
-            ) {
-
-                html += `
-
-                    <div
-                        class="
-                            agent-detail-row
-                        "
-                    >
+            if (Array.isArray(data.workflow)) {
+                detailsHTML += `
+                    <div class="agent-detail-row">
 
                         <div>
-
                             <strong>
                                 🔄 Workflow
                             </strong>
@@ -2188,74 +1189,49 @@ async function loadAgents() {
                                     )
                                 )}
                             </span>
-
                         </div>
 
                     </div>
-
                 `;
             }
 
-
-            details.innerHTML =
-                html;
+            details.innerHTML = detailsHTML;
         }
-
-
     } catch (error) {
-
         console.error(
-            "Failed to load agents:",
+            "Agent loading error:",
             error
         );
 
-
-        const details =
-            document.getElementById(
-                "agent-details"
-            );
-
-
         if (details) {
-
             details.innerHTML = `
-
                 <strong>
                     ⚠️ Multi-Agent Error
                 </strong>
 
                 <p>
-                    ${escapeHTML(
-                        error.message
-                    )}
+                    ${escapeHTML(error.message)}
                 </p>
-
             `;
         }
     }
 }
 
 
-// ======================================================
-// RESET
-// ======================================================
+// ============================================================
+// RESET SIMULATION
+// ============================================================
 
 async function resetSimulation() {
-
-    const confirmed =
-        confirm(
-            "Reset the complete simulation?"
-        );
-
+    const confirmed = confirm(
+        "Reset the complete simulation?"
+    );
 
     if (!confirmed) {
-
         return;
     }
 
-
     try {
-
         const data =
             await getData(
                 `${API}/reset`,
@@ -2264,308 +1240,130 @@ async function resetSimulation() {
                 }
             );
 
-
         alert(
-            data.message
+            data.message ||
+            "Simulation reset successfully."
         );
 
-
         await loadAll();
-
     } catch (error) {
-
         console.error(
             "Reset error:",
             error
         );
 
-        alert(
-            error.message
-        );
+        alert(error.message);
     }
 }
 
 
-// ======================================================
-// LOAD ALL
-// ======================================================
+// ============================================================
+// LOAD ALL DATA
+// ============================================================
 
 async function loadAll() {
-
     if (dashboardLoading) {
-
         return;
     }
 
-
     dashboardLoading = true;
 
-
     try {
-
         await checkSystemStatus();
 
-
         await Promise.allSettled([
-
             loadIncidents(),
-
             loadResources(),
-
             loadPlan(),
-
             loadHistory(),
-
             loadMonitor(),
-
             loadAuditLog(),
-
             loadAgents()
-
         ]);
-
     } catch (error) {
-
         console.error(
             "Dashboard loading error:",
             error
         );
-
-
-        const statusText =
-            document.getElementById(
-                "system-status-text"
-            );
-
-
-        const statusDot =
-            document.getElementById(
-                "system-status-dot"
-            );
-
-
-        if (statusText) {
-
-            statusText.textContent =
-                "System Offline";
-        }
-
-
-        if (statusDot) {
-
-            statusDot.className =
-                "status-dot offline";
-        }
-
     } finally {
-
         dashboardLoading = false;
     }
 }
 
 
-// ======================================================
+// ============================================================
 // CONNECT BUTTONS
-// ======================================================
+// ============================================================
 
 function connectButtons() {
+    const buttonHandlers = {
+        "approve-plan": approvePlan,
+        "reject-plan": rejectPlan,
+        "replan": replan,
+        "ai-analysis-btn": aiAnalysis,
+        "new-emergency": newEmergency,
+        "resource-failure": resourceFailure,
+        "increase-severity": increaseSeverity,
+        "reset-simulation": resetSimulation
+    };
 
-    const approveButton =
-        document.getElementById(
-            "approve-plan"
-        );
+    Object.entries(buttonHandlers).forEach(
+        ([id, handler]) => {
+            const button =
+                document.getElementById(id);
 
+            if (!button) {
+                return;
+            }
 
-    const rejectButton =
-        document.getElementById(
-            "reject-plan"
-        );
-
-
-    const replanButton =
-        document.getElementById(
-            "replan"
-        );
-
-
-    const aiButton =
-        document.getElementById(
-            "ai-analysis-btn"
-        );
-
-
-    const newEmergencyButton =
-        document.getElementById(
-            "new-emergency"
-        );
-
-
-    const resourceFailureButton =
-        document.getElementById(
-            "resource-failure"
-        );
-
-
-    const severityButton =
-        document.getElementById(
-            "increase-severity"
-        );
-
-
-    const resetButton =
-        document.getElementById(
-            "reset-simulation"
-        );
-
-
-    function connect(
-        button,
-        handler
-    ) {
-
-        if (!button) {
-
-            return;
+            button.onclick = handler;
         }
-
-
-        const newButton =
-            button.cloneNode(true);
-
-
-        button.replaceWith(
-            newButton
-        );
-
-
-        newButton.addEventListener(
-            "click",
-            handler
-        );
-    }
-
-
-    connect(
-        approveButton,
-        approvePlan
     );
-
-
-    connect(
-        rejectButton,
-        rejectPlan
-    );
-
-
-    connect(
-        replanButton,
-        replan
-    );
-
-
-    connect(
-        aiButton,
-        aiAnalysis
-    );
-
-
-    connect(
-        newEmergencyButton,
-        newEmergency
-    );
-
-
-    connect(
-        resourceFailureButton,
-        resourceFailure
-    );
-
-
-    connect(
-        severityButton,
-        increaseSeverity
-    );
-
-
-    connect(
-        resetButton,
-        resetSimulation
-    );
-
 
     console.log(
-        "All dashboard buttons connected."
+        "Dashboard buttons connected."
     );
 }
 
 
-// ======================================================
-// AUTOMATIC REFRESH
-// ======================================================
+// ============================================================
+// AUTO REFRESH
+// ============================================================
 
 function startAutoRefresh() {
-
-    if (
-        refreshTimer !== null
-    ) {
-
-        clearInterval(
-            refreshTimer
-        );
+    if (refreshTimer !== null) {
+        clearInterval(refreshTimer);
     }
 
-
-    refreshTimer =
-        setInterval(
-            async function () {
-
-                try {
-
-                    await loadAll();
-
-                    console.log(
-                        "Dashboard automatically refreshed."
-                    );
-
-                } catch (error) {
-
-                    console.error(
-                        "Automatic refresh failed:",
-                        error
-                    );
-                }
-
-            },
-            15000
-        );
+    refreshTimer = setInterval(
+        async () => {
+            await loadAll();
+        },
+        15000
+    );
 }
 
 
-// ======================================================
-// START APPLICATION
-// ======================================================
+// ============================================================
+// START DASHBOARD
+// ============================================================
 
 document.addEventListener(
     "DOMContentLoaded",
-    async function () {
+    async () => {
 
         console.log(
             "AapatSetu AI dashboard started."
         );
 
-
         connectButtons();
-
 
         await loadAll();
 
-
         startAutoRefresh();
 
-
         console.log(
-            "Dashboard data loaded."
+            "Dashboard loaded successfully."
         );
-
     }
 );
