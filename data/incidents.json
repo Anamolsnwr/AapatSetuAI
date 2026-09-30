@@ -22,5 +22,13 @@
         "severity": "Medium",
         "required_resources": ["Ambulance"],
         "status": "Active"
+    },
+    {
+        "id": "I004",
+        "type": "Chemical Factory Accident",
+        "location": "Zone D",
+        "severity": "Critical",
+        "required_resources": ["Ambulance"],
+        "status": "Active"
     }
 ]
