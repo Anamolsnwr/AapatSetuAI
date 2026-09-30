@@ -115,6 +115,20 @@ SIMULATED_INCIDENT_IDS = {
 
 
 # ============================================================
+# SECURITY TEST MODE
+# ============================================================
+
+# This is used only for the hackathon demonstration.
+#
+# False = normal Security/SISO validation
+# True  = controlled security warning simulation
+#
+# This does NOT modify the JSON files.
+
+security_test_mode = False
+
+
+# ============================================================
 # LOAD DATA
 # ============================================================
 
@@ -175,6 +189,54 @@ def load_initial_data():
 
 
     return incidents, resources
+
+
+# ============================================================
+# APPLY SECURITY TEST MODE
+# ============================================================
+
+def apply_security_test(audit):
+
+    if not security_test_mode:
+        return audit
+
+
+    # Create a copy so the original validation result
+    # is not accidentally modified elsewhere.
+
+    security_result = dict(audit)
+
+
+    security_result["status"] = "Warning"
+
+
+    existing_plan_errors = list(
+        security_result.get(
+            "plan_errors",
+            []
+        )
+    )
+
+
+    existing_plan_errors.append({
+
+        "type":
+            "Security Test",
+
+        "reason":
+            (
+                "Controlled security warning "
+                "simulation is active."
+            )
+    })
+
+
+    security_result["plan_errors"] = (
+        existing_plan_errors
+    )
+
+
+    return security_result
 
 
 # ============================================================
@@ -254,6 +316,12 @@ def create_plan(
     )
 
 
+    # Apply controlled security simulation
+    security_audit = apply_security_test(
+        security_audit
+    )
+
+
     # --------------------------------------------------------
     # STEP 4: CREATE PLAN OBJECT
     # --------------------------------------------------------
@@ -293,7 +361,10 @@ add_audit_log(
 
     "Initial Plan Created",
 
-    "Initial emergency response plan generated and passed through Security/SISO validation."
+    (
+        "Initial emergency response plan generated "
+        "and passed through Security/SISO validation."
+    )
 )
 
 
@@ -406,6 +477,12 @@ def replan():
         resources,
 
         new_plan_data
+    )
+
+
+    # Apply controlled security simulation
+    security_audit = apply_security_test(
+        security_audit
     )
 
 
@@ -551,7 +628,32 @@ def approve_plan():
         }
 
 
+    # --------------------------------------------------------
+    # RE-CHECK SECURITY IF TEST MODE IS ACTIVE
+    # --------------------------------------------------------
+
+    if security_test_mode:
+
+        security = apply_security_test(
+            security
+        )
+
+        current_plan["security"] = security
+
+
     if security["status"] != "Passed":
+
+        add_audit_log(
+
+            "Plan Approval Blocked",
+
+            (
+                f"{current_plan['version']} approval "
+                "was blocked because Security/SISO "
+                "validation returned a warning."
+            )
+        )
+
 
         return {
 
@@ -830,6 +932,11 @@ def modify_plan(
                 resources,
 
                 current_plan["plan"]
+            )
+
+
+            security_audit = apply_security_test(
+                security_audit
             )
 
 
@@ -1170,6 +1277,135 @@ def increase_severity():
 
 
 # ============================================================
+# SIMULATION - SECURITY WARNING
+# ============================================================
+
+@app.post("/simulate/security-warning")
+def simulate_security_warning():
+
+    global security_test_mode
+
+
+    security_test_mode = True
+
+
+    # --------------------------------------------------------
+    # UPDATE CURRENT PLAN SECURITY STATUS
+    # --------------------------------------------------------
+
+    if plan_history:
+
+        current_plan = plan_history[-1]
+
+
+        current_security = current_plan.get(
+            "security"
+        )
+
+
+        if current_security is not None:
+
+            current_plan["security"] = (
+                apply_security_test(
+                    current_security
+                )
+            )
+
+
+    # --------------------------------------------------------
+    # AUDIT EVENT
+    # --------------------------------------------------------
+
+    add_audit_log(
+
+        "Security Warning Simulation",
+
+        (
+            "Controlled Security/SISO warning "
+            "simulation was enabled for demonstration."
+        )
+    )
+
+
+    return {
+
+        "message":
+            "Security warning simulation enabled.",
+
+        "security_test_mode":
+            True,
+
+        "security_status":
+            "Warning"
+    }
+
+
+# ============================================================
+# DISABLE SECURITY TEST
+# ============================================================
+
+@app.post("/simulate/security-reset")
+def reset_security_test():
+
+    global security_test_mode
+
+
+    security_test_mode = False
+
+
+    # --------------------------------------------------------
+    # RE-RUN SECURITY AUDIT
+    # --------------------------------------------------------
+
+    if plan_history:
+
+        current_plan = plan_history[-1]
+
+
+        security_audit = run_security_audit(
+
+            incidents,
+
+            resources,
+
+            current_plan["plan"]
+        )
+
+
+        current_plan[
+            "security"
+        ] = security_audit
+
+
+    # --------------------------------------------------------
+    # AUDIT EVENT
+    # --------------------------------------------------------
+
+    add_audit_log(
+
+        "Security Warning Reset",
+
+        (
+            "Controlled Security/SISO warning "
+            "simulation was disabled."
+        )
+    )
+
+
+    return {
+
+        "message":
+            "Security warning simulation disabled.",
+
+        "security_test_mode":
+            False,
+
+        "security_status":
+            "Passed"
+    }
+
+
+# ============================================================
 # VALIDATE DATA
 # ============================================================
 
@@ -1197,6 +1433,59 @@ def validate_data():
 
 
     return results
+
+
+# ============================================================
+# SECURITY STATUS
+# ============================================================
+
+@app.get("/security-status")
+def security_status():
+
+    if not plan_history:
+
+        return {
+
+            "status":
+                "Unknown",
+
+            "security_test_mode":
+                security_test_mode
+        }
+
+
+    current_plan = plan_history[-1]
+
+
+    security_audit = run_security_audit(
+
+        incidents,
+
+        resources,
+
+        current_plan["plan"]
+    )
+
+
+    security_audit = apply_security_test(
+        security_audit
+    )
+
+
+    return {
+
+        "system":
+            "AapatSetu AI",
+
+        "plan_version":
+            current_plan["version"],
+
+        "security_test_mode":
+            security_test_mode,
+
+        "security":
+            security_audit
+    }
 
 
 # ============================================================
@@ -1315,10 +1604,6 @@ def explain_change():
 # MULTI-AGENT STATUS
 # ============================================================
 
-# ============================================================
-# MULTI-AGENT STATUS
-# ============================================================
-
 @app.get("/agents/status")
 def get_agent_status():
 
@@ -1367,6 +1652,15 @@ def get_agent_status():
 
         current_plan["plan"]
     )
+
+
+    security_audit = apply_security_test(
+        security_audit
+    )
+
+
+    # Keep current plan security status synchronized
+    current_plan["security"] = security_audit
 
 
     security = security_agent(
@@ -1500,6 +1794,7 @@ def get_agent_status():
             coordinator["workflow"]
     }
 
+
 # ============================================================
 # RESET SIMULATION
 # ============================================================
@@ -1516,6 +1811,15 @@ def reset_simulation():
     global plan_history
 
     global audit_log
+
+    global security_test_mode
+
+
+    # --------------------------------------------------------
+    # DISABLE SECURITY TEST MODE
+    # --------------------------------------------------------
+
+    security_test_mode = False
 
 
     # --------------------------------------------------------
