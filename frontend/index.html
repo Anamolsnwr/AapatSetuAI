@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+
     <meta charset="UTF-8">
 
     <meta
@@ -15,9 +16,12 @@
         rel="stylesheet"
         href="style.css"
     >
+
 </head>
 
+
 <body>
+
 
     <!-- =====================================================
          HEADER
@@ -26,20 +30,29 @@
     <header class="header">
 
         <div>
-            <h1>🚨 AapatSetu AI</h1>
+
+            <h1>
+                🚨 AapatSetu AI
+            </h1>
 
             <p>
                 Multi-Agent Emergency Response &
                 Resource Coordination System
             </p>
+
         </div>
 
+
         <div class="system-status">
+
             <span class="status-dot"></span>
+
             System Online
+
         </div>
 
     </header>
+
 
 
     <!-- =====================================================
@@ -55,9 +68,12 @@
 
         <section class="stats-grid">
 
+
             <div class="stat-card">
 
-                <h3>🚨 Incidents</h3>
+                <h3>
+                    🚨 Incidents
+                </h3>
 
                 <p id="incident-count">
                     0
@@ -66,9 +82,12 @@
             </div>
 
 
+
             <div class="stat-card">
 
-                <h3>🚑 Resources</h3>
+                <h3>
+                    🚑 Resources
+                </h3>
 
                 <p id="resource-count">
                     0
@@ -77,9 +96,12 @@
             </div>
 
 
+
             <div class="stat-card">
 
-                <h3>📋 Plan Version</h3>
+                <h3>
+                    📋 Plan Version
+                </h3>
 
                 <p id="plan-version">
                     V1
@@ -88,9 +110,12 @@
             </div>
 
 
+
             <div class="stat-card">
 
-                <h3>📌 Plan Status</h3>
+                <h3>
+                    📌 Plan Status
+                </h3>
 
                 <p id="plan-status">
                     Loading...
@@ -171,9 +196,11 @@
 
             <div class="button-row">
 
+
                 <button id="approve-plan">
                     ✅ Approve Plan
                 </button>
+
 
                 <button
                     id="reject-plan"
@@ -182,9 +209,11 @@
                     ❌ Reject Plan
                 </button>
 
+
                 <button id="replan">
                     🔄 Re-plan
                 </button>
+
 
             </div>
 
@@ -210,9 +239,150 @@
                 the current response plan.
             </div>
 
+
             <button id="ai-analysis-btn">
                 🤖 AI Analysis
             </button>
+
+        </section>
+
+
+
+        <!-- =================================================
+             MULTI-AGENT COMMAND CENTER
+        ================================================== -->
+
+        <section>
+
+            <h2 class="section-title">
+                🤖 Multi-Agent Command Center
+            </h2>
+
+
+            <div
+                id="agents-container"
+                class="agents-grid"
+            >
+
+                <div class="agent-card">
+
+                    <div class="agent-icon">
+                        🧠
+                    </div>
+
+                    <div class="agent-info">
+
+                        <h3>
+                            Assessment Agent
+                        </h3>
+
+                        <p>
+                            Waiting...
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="agent-card">
+
+                    <div class="agent-icon">
+                        📋
+                    </div>
+
+                    <div class="agent-info">
+
+                        <h3>
+                            Planning Agent
+                        </h3>
+
+                        <p>
+                            Waiting...
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="agent-card">
+
+                    <div class="agent-icon">
+                        🔐
+                    </div>
+
+                    <div class="agent-info">
+
+                        <h3>
+                            Security/SISO Agent
+                        </h3>
+
+                        <p>
+                            Waiting...
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="agent-card">
+
+                    <div class="agent-icon">
+                        👁️
+                    </div>
+
+                    <div class="agent-info">
+
+                        <h3>
+                            Monitoring Agent
+                        </h3>
+
+                        <p>
+                            Waiting...
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="agent-card">
+
+                    <div class="agent-icon">
+                        🔄
+                    </div>
+
+                    <div class="agent-info">
+
+                        <h3>
+                            Re-planning Agent
+                        </h3>
+
+                        <p>
+                            Waiting...
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="agent-details"
+                class="info-box"
+            >
+
+                Multi-Agent system initializing...
+
+            </div>
 
         </section>
 
@@ -227,6 +397,7 @@
             <h2 class="section-title">
                 🎮 Emergency Simulation
             </h2>
+
 
             <div class="simulation-grid">
 
@@ -308,6 +479,7 @@
 
                 </div>
 
+
             </div>
 
         </section>
@@ -375,11 +547,13 @@
     </main>
 
 
+
     <!-- =====================================================
          JAVASCRIPT
     ====================================================== -->
 
     <script src="dashboard.js"></script>
+
 
 </body>
 
