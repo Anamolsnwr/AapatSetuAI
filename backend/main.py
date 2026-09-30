@@ -101,6 +101,18 @@ RESOURCES_FILE = DATA_DIR / "resources.json"
 
 
 # ============================================================
+# SIMULATION DATA
+# ============================================================
+
+# These incidents are created only during simulation.
+# They must not exist after a simulation reset.
+
+SIMULATED_INCIDENT_IDS = {
+    "I005"
+}
+
+
+# ============================================================
 # LOAD DATA
 # ============================================================
 
@@ -128,10 +140,46 @@ def load_data():
 
 
 # ============================================================
+# LOAD CLEAN INITIAL DATA
+# ============================================================
+
+def load_initial_data():
+
+    incidents, resources = load_data()
+
+
+    # --------------------------------------------------------
+    # REMOVE SIMULATION-ONLY INCIDENTS
+    # --------------------------------------------------------
+
+    incidents = [
+
+        incident
+
+        for incident in incidents
+
+        if incident.get("id")
+        not in SIMULATED_INCIDENT_IDS
+    ]
+
+
+    # --------------------------------------------------------
+    # RESET RESOURCE STATUS
+    # --------------------------------------------------------
+
+    for resource in resources:
+
+        resource["status"] = "available"
+
+
+    return incidents, resources
+
+
+# ============================================================
 # INITIAL SYSTEM DATA
 # ============================================================
 
-incidents, resources = load_data()
+incidents, resources = load_initial_data()
 
 plan_version = 1
 
@@ -1416,10 +1464,10 @@ def reset_simulation():
 
 
     # --------------------------------------------------------
-    # RELOAD ORIGINAL DATA
+    # LOAD CLEAN ORIGINAL DATA
     # --------------------------------------------------------
 
-    incidents, resources = load_data()
+    incidents, resources = load_initial_data()
 
 
     # --------------------------------------------------------
@@ -1429,8 +1477,16 @@ def reset_simulation():
     plan_version = 1
 
 
+    # --------------------------------------------------------
+    # CLEAR HISTORY
+    # --------------------------------------------------------
+
     plan_history = []
 
+
+    # --------------------------------------------------------
+    # CLEAR AUDIT LOG
+    # --------------------------------------------------------
 
     audit_log = []
 
@@ -1449,6 +1505,10 @@ def reset_simulation():
         initial_plan
     )
 
+
+    # --------------------------------------------------------
+    # ADD RESET AUDIT ENTRY
+    # --------------------------------------------------------
 
     add_audit_log(
 
