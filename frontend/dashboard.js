@@ -44,21 +44,17 @@ async function loadIncidents() {
             `${API}/incidents`
         );
 
-
     document.getElementById(
         "incident-count"
     ).textContent =
         incidents.length;
-
 
     const container =
         document.getElementById(
             "incidents-container"
         );
 
-
     container.innerHTML = "";
-
 
     incidents.forEach(incident => {
 
@@ -113,21 +109,17 @@ async function loadResources() {
             `${API}/resources`
         );
 
-
     document.getElementById(
         "resource-count"
     ).textContent =
         resources.length;
-
 
     const container =
         document.getElementById(
             "resources-container"
         );
 
-
     container.innerHTML = "";
-
 
     resources.forEach(resource => {
 
@@ -135,7 +127,6 @@ async function loadResources() {
             resource.status === "available"
                 ? "🟢 Available"
                 : "🔴 Unavailable";
-
 
         container.innerHTML += `
 
@@ -178,24 +169,20 @@ async function loadPlan() {
             `${API}/plan`
         );
 
-
     document.getElementById(
         "plan-version"
     ).textContent =
         plan.version;
-
 
     document.getElementById(
         "plan-status"
     ).textContent =
         plan.status;
 
-
     const container =
         document.getElementById(
             "plan-container"
         );
-
 
     container.innerHTML = `
 
@@ -218,7 +205,6 @@ async function loadPlan() {
         </div>
 
     `;
-
 
     plan.plan.forEach(item => {
 
@@ -271,7 +257,7 @@ async function loadPlan() {
 
 
 // ======================================================
-// APPROVE
+// APPROVE PLAN
 // ======================================================
 
 async function approvePlan() {
@@ -286,7 +272,6 @@ async function approvePlan() {
                 }
             );
 
-
         alert(data.message);
 
         await loadAll();
@@ -299,7 +284,7 @@ async function approvePlan() {
 
 
 // ======================================================
-// REJECT
+// REJECT PLAN
 // ======================================================
 
 async function rejectPlan() {
@@ -313,7 +298,6 @@ async function rejectPlan() {
                     method: "POST"
                 }
             );
-
 
         alert(data.message);
 
@@ -342,7 +326,6 @@ async function replan() {
                 }
             );
 
-
         alert(data.message);
 
         await loadAll();
@@ -365,10 +348,8 @@ async function aiAnalysis() {
             "ai-analysis"
         );
 
-
     box.innerHTML =
         "🤖 AI is analyzing the emergency situation...";
-
 
     try {
 
@@ -376,7 +357,6 @@ async function aiAnalysis() {
             await getData(
                 `${API}/ai/explain-plan`
             );
-
 
         if (
             !data.ai_analysis ||
@@ -388,7 +368,6 @@ async function aiAnalysis() {
 
             return;
         }
-
 
         box.innerHTML = `
 
@@ -412,7 +391,6 @@ async function aiAnalysis() {
             "AI error:",
             error
         );
-
 
         box.innerHTML = `
 
@@ -459,7 +437,6 @@ async function newEmergency() {
                 }
             );
 
-
         alert(data.message);
 
         await loadAll();
@@ -486,7 +463,6 @@ async function resourceFailure() {
                     method: "POST"
                 }
             );
-
 
         alert(data.message);
 
@@ -515,7 +491,6 @@ async function increaseSeverity() {
                 }
             );
 
-
         alert(data.message);
 
         await loadAll();
@@ -538,12 +513,10 @@ async function loadMonitor() {
             `${API}/monitor`
         );
 
-
     const container =
         document.getElementById(
             "monitor-container"
         );
-
 
     if (!data.changes_detected) {
 
@@ -562,7 +535,6 @@ async function loadMonitor() {
         return;
     }
 
-
     container.innerHTML = `
 
         <strong>
@@ -570,7 +542,6 @@ async function loadMonitor() {
         </strong>
 
     `;
-
 
     data.changes.forEach(change => {
 
@@ -609,15 +580,12 @@ async function loadHistory() {
             `${API}/plan-history`
         );
 
-
     const container =
         document.getElementById(
             "history-container"
         );
 
-
     container.innerHTML = "";
-
 
     history.forEach(plan => {
 
@@ -657,19 +625,15 @@ async function loadAuditLog() {
             `${API}/audit-log`
         );
 
-
     const container =
         document.getElementById(
             "audit-container"
         );
 
-
     container.innerHTML = "";
-
 
     const logs =
         data.audit_log || [];
-
 
     logs
         .slice()
@@ -685,11 +649,13 @@ async function loadAuditLog() {
                     </h3>
 
                     <p>
+
                         <strong>
                             Time:
                         </strong>
 
                         ${log.timestamp}
+
                     </p>
 
                     <p>
@@ -700,6 +666,230 @@ async function loadAuditLog() {
 
             `;
         });
+}
+
+
+// ======================================================
+// MULTI-AGENT STATUS
+// ======================================================
+
+async function loadAgents() {
+
+    try {
+
+        const data =
+            await getData(
+                `${API}/agents/status`
+            );
+
+        const container =
+            document.getElementById(
+                "agents-container"
+            );
+
+        const details =
+            document.getElementById(
+                "agent-details"
+            );
+
+        if (!container) {
+
+            console.warn(
+                "agents-container not found."
+            );
+
+            return;
+        }
+
+        container.innerHTML = "";
+
+
+        // ==================================================
+        // CREATE AGENT CARDS
+        // ==================================================
+
+        data.agents.forEach(agent => {
+
+            let icon = "🤖";
+
+            if (
+                agent.agent ===
+                "Assessment Agent"
+            ) {
+
+                icon = "🧠";
+
+            }
+            else if (
+                agent.agent ===
+                "Planning Agent"
+            ) {
+
+                icon = "📋";
+
+            }
+            else if (
+                agent.agent ===
+                "Security/SISO Agent"
+            ) {
+
+                icon = "🔐";
+
+            }
+            else if (
+                agent.agent ===
+                "Monitoring Agent"
+            ) {
+
+                icon = "👁️";
+
+            }
+            else if (
+                agent.agent ===
+                "Re-planning Agent"
+            ) {
+
+                icon = "🔄";
+            }
+
+
+            // ==============================================
+            // STATUS CLASS
+            // ==============================================
+
+            let statusClass =
+                "agent-normal";
+
+            if (
+                agent.status ===
+                    "Passed" ||
+                agent.status ===
+                    "Completed"
+            ) {
+
+                statusClass =
+                    "agent-success";
+
+            }
+            else if (
+                agent.status ===
+                    "Warning" ||
+                agent.status ===
+                    "Change Detected"
+            ) {
+
+                statusClass =
+                    "agent-warning";
+
+            }
+            else if (
+                agent.status ===
+                    "Triggered"
+            ) {
+
+                statusClass =
+                    "agent-triggered";
+            }
+
+
+            // ==============================================
+            // CARD
+            // ==============================================
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+            card.className =
+                `agent-card ${statusClass}`;
+
+            card.innerHTML = `
+
+                <div class="agent-icon">
+                    ${icon}
+                </div>
+
+                <div class="agent-info">
+
+                    <h3>
+                        ${agent.agent}
+                    </h3>
+
+                    <p>
+                        ${agent.status}
+                    </p>
+
+                </div>
+
+            `;
+
+            container.appendChild(
+                card
+            );
+
+        });
+
+
+        // ==================================================
+        // AGENT DETAILS
+        // ==================================================
+
+        if (details) {
+
+            let html =
+                "<strong>Agent Activity</strong><br><br>";
+
+            data.agents.forEach(agent => {
+
+                html += `
+
+                    <div class="agent-detail-row">
+
+                        <strong>
+                            ${agent.agent}
+                        </strong>
+
+                        :
+                        ${agent.status}
+
+                    </div>
+
+                `;
+            });
+
+            details.innerHTML =
+                html;
+        }
+
+
+    } catch (error) {
+
+        console.error(
+            "Failed to load agents:",
+            error
+        );
+
+        const details =
+            document.getElementById(
+                "agent-details"
+            );
+
+        if (details) {
+
+            details.innerHTML = `
+
+                <strong>
+                    ⚠️ Multi-Agent Error
+                </strong>
+
+                <p>
+                    ${error.message}
+                </p>
+
+            `;
+        }
+    }
 }
 
 
@@ -718,7 +908,6 @@ async function resetSimulation() {
         return;
     }
 
-
     try {
 
         const data =
@@ -728,7 +917,6 @@ async function resetSimulation() {
                     method: "POST"
                 }
             );
-
 
         alert(data.message);
 
@@ -747,20 +935,31 @@ async function resetSimulation() {
 
 async function loadAll() {
 
-    await loadIncidents();
+    try {
 
-    await loadResources();
+        await loadIncidents();
 
-    await loadPlan();
+        await loadResources();
 
-    await loadHistory();
+        await loadPlan();
 
-    await loadMonitor();
+        await loadHistory();
 
-    await loadAuditLog();
+        await loadMonitor();
 
-    await loadAgents();
+        await loadAuditLog();
+
+        await loadAgents();
+
+    } catch (error) {
+
+        console.error(
+            "Dashboard loading error:",
+            error
+        );
+    }
 }
+
 
 // ======================================================
 // CONNECT BUTTONS
@@ -850,12 +1049,9 @@ document.addEventListener(
             "AapatSetu AI dashboard started."
         );
 
-
         connectButtons();
 
-
         await loadAll();
-
 
         console.log(
             "Dashboard data loaded."
@@ -863,194 +1059,3 @@ document.addEventListener(
 
     }
 );
-
-// ============================================================
-// MULTI-AGENT STATUS
-// ============================================================
-
-async function loadAgents() {
-
-    try {
-
-        const response = await fetch(
-            `${API}/agents/status`
-        );
-
-        if (!response.ok) {
-
-            throw new Error(
-                `Agent API error: ${response.status}`
-            );
-        }
-
-        const data = await response.json();
-
-        const container =
-            document.getElementById(
-                "agents-container"
-            );
-
-        const details =
-            document.getElementById(
-                "agent-details"
-            );
-
-        if (!container) {
-            return;
-        }
-
-        container.innerHTML = "";
-
-        data.agents.forEach(agent => {
-
-            let icon = "🤖";
-
-            if (
-                agent.agent ===
-                "Assessment Agent"
-            ) {
-                icon = "🧠";
-            }
-
-            else if (
-                agent.agent ===
-                "Planning Agent"
-            ) {
-                icon = "📋";
-            }
-
-            else if (
-                agent.agent ===
-                "Security/SISO Agent"
-            ) {
-                icon = "🔐";
-            }
-
-            else if (
-                agent.agent ===
-                "Monitoring Agent"
-            ) {
-                icon = "👁️";
-            }
-
-            else if (
-                agent.agent ===
-                "Re-planning Agent"
-            ) {
-                icon = "🔄";
-            }
-
-
-            let statusClass = "agent-normal";
-
-            if (
-                agent.status === "Passed" ||
-                agent.status === "Completed"
-            ) {
-
-                statusClass = "agent-success";
-
-            }
-
-            else if (
-                agent.status === "Warning" ||
-                agent.status === "Change Detected"
-            ) {
-
-                statusClass = "agent-warning";
-
-            }
-
-            else if (
-                agent.status === "Triggered"
-            ) {
-
-                statusClass = "agent-triggered";
-
-            }
-
-
-            const card =
-                document.createElement("div");
-
-            card.className =
-                `agent-card ${statusClass}`;
-
-
-            card.innerHTML = `
-
-                <div class="agent-icon">
-                    ${icon}
-                </div>
-
-                <div class="agent-info">
-
-                    <h3>
-                        ${agent.agent}
-                    </h3>
-
-                    <p>
-                        ${agent.status}
-                    </p>
-
-                </div>
-
-            `;
-
-
-            container.appendChild(card);
-
-        });
-
-
-        // ====================================================
-        // AGENT DETAILS
-        // ====================================================
-
-        if (details) {
-
-            let html =
-                "<strong>Agent Activity</strong><br><br>";
-
-            data.agents.forEach(agent => {
-
-                html += `
-                    <div class="agent-detail-row">
-                        <strong>
-                            ${agent.agent}
-                        </strong>
-                        :
-                        ${agent.status}
-                    </div>
-                `;
-
-            });
-
-            details.innerHTML = html;
-        }
-
-
-    }
-
-    catch (error) {
-
-        console.error(
-            "Failed to load agents:",
-            error
-        );
-
-        const details =
-            document.getElementById(
-                "agent-details"
-            );
-
-        if (details) {
-
-            details.innerHTML =
-                "⚠️ Unable to load Multi-Agent status.";
-
-        }
-
-    }
-
-}
