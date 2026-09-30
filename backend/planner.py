@@ -1,6 +1,8 @@
 # ============================================================
 # backend/planner.py
+# AapatSetu AI - Resource Allocation Planner
 # ============================================================
+
 
 SEVERITY_PRIORITY = {
     "Critical": 4,
@@ -12,134 +14,115 @@ SEVERITY_PRIORITY = {
 
 def calculate_priority(incident):
 
-    return SEVERITY_PRIORITY.get(
-        incident["severity"],
-        0
-    )
+    severity = incident.get("severity", "Low")
+
+    return SEVERITY_PRIORITY.get(severity, 0)
 
 
-def allocate_resources(
-    incidents,
-    resources
-):
+def allocate_resources(incidents, resources):
 
+    # Sort incidents by severity
     sorted_incidents = sorted(
         incidents,
         key=calculate_priority,
         reverse=True
     )
 
+    # Get only available resources
     available_resources = [
-
         resource.copy()
-
         for resource in resources
-
-        if resource["status"] == "available"
+        if resource.get("status") == "available"
     ]
 
+    # Store the response plan
     plan = []
 
+    # Process each incident
     for incident in sorted_incidents:
 
-        for required_type in incident[
-            "required_resources"
-        ]:
+        required_resources = incident.get(
+            "required_resources",
+            []
+        )
 
+        # Process each required resource
+        for required_type in required_resources:
+
+            # Find matching resources
             matching_resources = [
-
                 resource
-
                 for resource in available_resources
-
-                if resource["type"] ==
-                required_type
+                if resource.get("type") == required_type
             ]
 
+            # If a resource is available
             if matching_resources:
 
-                same_zone = [
-
+                # Find same-location resources
+                same_location = [
                     resource
-
                     for resource in matching_resources
-
-                    if resource["location"] ==
-                    incident["location"]
+                    if resource.get("location") == incident.get("location")
                 ]
 
-                if same_zone:
+                # Select resource
+                if same_location:
 
-                    selected = same_zone[0]
+                    selected = same_location[0]
+
+                    reason = (
+                        f"{selected['id']} assigned because "
+                        f"it is an available {required_type} "
+                        f"in the same location as "
+                        f"incident {incident['id']}."
+                    )
 
                 else:
 
                     selected = matching_resources[0]
 
-                plan.append({
+                    reason = (
+                        f"{selected['id']} assigned because "
+                        f"it is an available {required_type}. "
+                        f"No same-location resource was available "
+                        f"for incident {incident['id']}."
+                    )
 
-                    "resource_id":
-                        selected["id"],
-
-                    "incident_id":
-                        incident["id"],
-
-                    "incident_type":
-                        incident["type"],
-
-                    "location":
-                        incident["location"],
-
-                    "severity":
-                        incident["severity"],
-
-                    "status":
-                        "Assigned",
-
-                    "reason":
-                        (
-                            f"{selected['id']} "
-                            f"assigned because "
-                            f"the incident has "
-                            f"{incident['severity']} "
-                            f"priority."
-                        )
-                })
-
-                available_resources.remove(
-                    selected
+                # Add assignment to plan
+                plan.append(
+                    {
+                        "resource_id": selected["id"],
+                        "incident_id": incident["id"],
+                        "incident_type": incident["type"],
+                        "location": incident["location"],
+                        "severity": incident["severity"],
+                        "status": "Assigned",
+                        "reason": reason
+                    }
                 )
 
+                # Remove used resource
+                available_resources.remove(selected)
+
+            # If no resource is available
             else:
 
-                plan.append({
-
-                    "resource_id":
-                        None,
-
-                    "incident_id":
-                        incident["id"],
-
-                    "incident_type":
-                        incident["type"],
-
-                    "location":
-                        incident["location"],
-
-                    "severity":
-                        incident["severity"],
-
-                    "status":
-                        "Human Attention Required",
-
-                    "reason":
-                        (
-                           (
-                                f"No available {required_type} "
-                                f"for {incident['id']}. "
-                                f"Human attention is required."
-                            )
+                plan.append(
+                    {
+                        "resource_id": None,
+                        "incident_id": incident["id"],
+                        "incident_type": incident["type"],
+                        "location": incident["location"],
+                        "severity": incident["severity"],
+                        "status": "Human Attention Required",
+                        "reason": (
+                            f"No available {required_type} "
+                            f"for incident {incident['id']}. "
+                            f"Human attention is required."
                         )
-                })
+                    }
+                )
 
+    # Return the completed plan
     return plan
