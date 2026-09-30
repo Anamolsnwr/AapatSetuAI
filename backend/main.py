@@ -247,69 +247,69 @@ def replan():
 
     global plan_version
 
-    if not plan_history:
-
-        return {
-
-            "message":
-                "No existing plan"
-        }
-
-    current_plan = plan_history[-1]
-
-    current_status = current_plan["status"]
-
-    if current_status in [
-        "Active",
-        "Pending Approval",
-        "Outdated"
-    ]:
-
-        current_plan["status"] = "Superseded"
-
-
-    # --------------------------------------------------------
-    # Increase plan version
-    # --------------------------------------------------------
-
-    plan_version += 1
-
-
-    # --------------------------------------------------------
-    # Create new plan
-    # --------------------------------------------------------
-
-    new_plan = create_plan(
-        "Response plan updated because the situation changed"
+    # Create a new plan
+    new_plan_data = allocate_resources(
+        incidents,
+        resources
     )
 
+    # Increase plan version
+    plan_version += 1
+
+    new_version = f"V{plan_version}"
+
+    # Validate the new plan
+    security_audit = run_security_audit(
+        incidents,
+        resources,
+        new_plan_data
+    )
+
+    # Create new plan record
+    new_plan = {
+
+        "version":
+            new_version,
+
+        "status":
+            "Pending Approval",
+
+        "change_reason":
+            "Emergency situation changed. "
+            "Response plan regenerated.",
+
+        "plan":
+            new_plan_data,
+
+        "security":
+            security_audit
+    }
+
+    # Add to history
     plan_history.append(
         new_plan
     )
 
-
-    # --------------------------------------------------------
-    # Audit
-    # --------------------------------------------------------
-
+    # Audit log
     add_audit_log(
-        "Re-planning",
+        "Plan Re-planned",
         (
-            f"New response plan "
-            f"{new_plan['version']} generated."
+            f"{new_version} generated "
+            "because the emergency situation changed."
         )
     )
-
 
     return {
 
         "message":
-            "New response plan generated",
+            f"{new_version} generated successfully",
 
         "plan":
-            new_plan
-    }
+            new_plan,
 
+        "security":
+            security_audit
+    }
 
 # ============================================================
 # APPROVE PLAN
