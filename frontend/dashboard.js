@@ -7,7 +7,8 @@ const API = "https://aapatsetu-ai.onrender.com";
 
 async function getData(url, options = {}) {
 
-    const response = await fetch(url, options);
+    const response =
+        await fetch(url, options);
 
     if (!response.ok) {
 
@@ -53,6 +54,10 @@ async function loadIncidents() {
         document.getElementById(
             "incidents-container"
         );
+
+    if (!container) {
+        return;
+    }
 
     container.innerHTML = "";
 
@@ -119,6 +124,10 @@ async function loadResources() {
             "resources-container"
         );
 
+    if (!container) {
+        return;
+    }
+
     container.innerHTML = "";
 
     resources.forEach(resource => {
@@ -169,20 +178,36 @@ async function loadPlan() {
             `${API}/plan`
         );
 
-    document.getElementById(
-        "plan-version"
-    ).textContent =
-        plan.version;
+    const version =
+        document.getElementById(
+            "plan-version"
+        );
 
-    document.getElementById(
-        "plan-status"
-    ).textContent =
-        plan.status;
+    const status =
+        document.getElementById(
+            "plan-status"
+        );
 
     const container =
         document.getElementById(
             "plan-container"
         );
+
+    if (version) {
+
+        version.textContent =
+            plan.version;
+    }
+
+    if (status) {
+
+        status.textContent =
+            plan.status;
+    }
+
+    if (!container) {
+        return;
+    }
 
     container.innerHTML = `
 
@@ -348,6 +373,10 @@ async function aiAnalysis() {
             "ai-analysis"
         );
 
+    if (!box) {
+        return;
+    }
+
     box.innerHTML =
         "🤖 AI is analyzing the emergency situation...";
 
@@ -413,7 +442,7 @@ async function aiAnalysis() {
 
 function formatAIText(text) {
 
-    return text
+    return String(text)
         .replace(
             /\n/g,
             "<br>"
@@ -518,6 +547,10 @@ async function loadMonitor() {
             "monitor-container"
         );
 
+    if (!container) {
+        return;
+    }
+
     if (!data.changes_detected) {
 
         container.innerHTML = `
@@ -585,6 +618,10 @@ async function loadHistory() {
             "history-container"
         );
 
+    if (!container) {
+        return;
+    }
+
     container.innerHTML = "";
 
     history.forEach(plan => {
@@ -629,6 +666,10 @@ async function loadAuditLog() {
         document.getElementById(
             "audit-container"
         );
+
+    if (!container) {
+        return;
+    }
 
     container.innerHTML = "";
 
@@ -711,36 +752,51 @@ async function loadAgents() {
         const agentInfo = {
 
             "Assessment Agent": {
+
                 icon: "🧠",
+
                 step: "1",
+
                 description:
                     "Analyzes emergency incidents and identifies their requirements."
             },
 
             "Planning Agent": {
+
                 icon: "📋",
+
                 step: "2",
+
                 description:
                     "Allocates available resources according to incident priority."
             },
 
             "Security/SISO Agent": {
+
                 icon: "🔐",
+
                 step: "3",
+
                 description:
                     "Validates incidents, resources and the response plan."
             },
 
             "Monitoring Agent": {
+
                 icon: "👁️",
+
                 step: "4",
+
                 description:
                     "Continuously checks for changes in the emergency situation."
             },
 
             "Re-planning Agent": {
+
                 icon: "🔄",
+
                 step: "5",
+
                 description:
                     "Generates a new response plan when a significant change occurs."
             }
@@ -749,150 +805,235 @@ async function loadAgents() {
 
 
         // ==================================================
-        // CREATE AGENT WORKFLOW
+        // WORKFLOW CONNECTOR
+        // ==================================================
+
+        function addConnector() {
+
+            const connector =
+                document.createElement(
+                    "div"
+                );
+
+            connector.className =
+                "agent-connector";
+
+            connector.innerHTML =
+                "↓";
+
+            container.appendChild(
+                connector
+            );
+        }
+
+
+        // ==================================================
+        // CREATE AGENT CARD
+        // ==================================================
+
+        function createAgentCard(agent) {
+
+            const info =
+                agentInfo[
+                    agent.agent
+                ] || {
+
+                    icon: "🤖",
+
+                    step: "",
+
+                    description:
+                        "Emergency response agent."
+                };
+
+
+            // ----------------------------------------------
+            // STATUS CLASS
+            // ----------------------------------------------
+
+            let statusClass =
+                "agent-normal";
+
+
+            if (
+                agent.status ===
+                    "Passed" ||
+
+                agent.status ===
+                    "Completed"
+            ) {
+
+                statusClass =
+                    "agent-success";
+            }
+
+            else if (
+                agent.status ===
+                    "Warning" ||
+
+                agent.status ===
+                    "Change Detected"
+            ) {
+
+                statusClass =
+                    "agent-warning";
+            }
+
+            else if (
+                agent.status ===
+                "Triggered"
+            ) {
+
+                statusClass =
+                    "agent-triggered";
+            }
+
+            else if (
+                agent.status ===
+                "Monitoring"
+            ) {
+
+                statusClass =
+                    "agent-monitoring";
+            }
+
+
+            // ----------------------------------------------
+            // CARD
+            // ----------------------------------------------
+
+            const card =
+                document.createElement(
+                    "div"
+                );
+
+            card.className =
+                `agent-card ${statusClass}`;
+
+
+            card.innerHTML = `
+
+                <div class="agent-step">
+                    ${info.step}
+                </div>
+
+                <div class="agent-icon">
+                    ${info.icon}
+                </div>
+
+                <div class="agent-info">
+
+                    <h3>
+                        ${agent.agent}
+                    </h3>
+
+                    <p class="agent-description">
+                        ${info.description}
+                    </p>
+
+                    <span class="agent-status">
+                        ${agent.status}
+                    </span>
+
+                </div>
+
+            `;
+
+
+            container.appendChild(
+                card
+            );
+        }
+
+
+        // ==================================================
+        // CREATE WORKFLOW
         // ==================================================
 
         data.agents.forEach(
             (agent, index) => {
 
-                const info =
-                    agentInfo[
-                        agent.agent
-                    ] || {
-
-                        icon: "🤖",
-                        step:
-                            index + 1,
-
-                        description:
-                            "Emergency response agent."
-                    };
+                createAgentCard(agent);
 
 
-                // ==========================================
-                // STATUS CLASS
-                // ==========================================
-
-                let statusClass =
-                    "agent-normal";
-
+                /*
+                 * After Security/SISO, insert the
+                 * Human Approval stage.
+                 */
 
                 if (
-                    agent.status ===
-                        "Passed" ||
-
-                    agent.status ===
-                        "Completed"
+                    agent.agent ===
+                    "Security/SISO Agent"
                 ) {
 
-                    statusClass =
-                        "agent-success";
-
-                }
-
-                else if (
-                    agent.status ===
-                        "Warning" ||
-
-                    agent.status ===
-                        "Change Detected"
-                ) {
-
-                    statusClass =
-                        "agent-warning";
-
-                }
-
-                else if (
-                    agent.status ===
-                    "Triggered"
-                ) {
-
-                    statusClass =
-                        "agent-triggered";
-
-                }
-
-                else if (
-                    agent.status ===
-                    "Monitoring"
-                ) {
-
-                    statusClass =
-                        "agent-monitoring";
-                }
+                    addConnector();
 
 
-                // ==========================================
-                // CREATE CARD
-                // ==========================================
+                    // --------------------------------------
+                    // HUMAN APPROVAL STAGE
+                    // --------------------------------------
 
-                const card =
-                    document.createElement(
-                        "div"
-                    );
-
-                card.className =
-                    `agent-card ${statusClass}`;
-
-
-                card.innerHTML = `
-
-                    <div class="agent-step">
-                        ${info.step}
-                    </div>
-
-                    <div class="agent-icon">
-                        ${info.icon}
-                    </div>
-
-                    <div class="agent-info">
-
-                        <h3>
-                            ${agent.agent}
-                        </h3>
-
-                        <p class="agent-description">
-                            ${info.description}
-                        </p>
-
-                        <span class="agent-status">
-                            ${agent.status}
-                        </span>
-
-                    </div>
-
-                `;
-
-
-                container.appendChild(
-                    card
-                );
-
-
-                // ==========================================
-                // CONNECTOR
-                // ==========================================
-
-                if (
-                    index <
-                    data.agents.length - 1
-                ) {
-
-                    const connector =
+                    const humanStage =
                         document.createElement(
                             "div"
                         );
 
-                    connector.className =
-                        "agent-connector";
+                    humanStage.className =
+                        "human-approval-stage";
 
-                    connector.innerHTML =
-                        "↓";
+
+                    humanStage.innerHTML = `
+
+                        <div class="human-approval-icon">
+                            👤
+                        </div>
+
+                        <div class="human-approval-content">
+
+                            <strong>
+                                Human Approval
+                            </strong>
+
+                            <p>
+                                Emergency response plans
+                                require human review before activation.
+                            </p>
+
+                            <span class="human-approval-status">
+                                Human-in-the-Loop
+                            </span>
+
+                        </div>
+
+                    `;
+
 
                     container.appendChild(
-                        connector
+                        humanStage
                     );
+
+
+                    /*
+                     * Connector after Human Approval
+                     * is added only if another agent exists.
+                     */
+
+                    if (
+                        index <
+                        data.agents.length - 1
+                    ) {
+
+                        addConnector();
+                    }
+
+                }
+
+                else if (
+                    index <
+                    data.agents.length - 1
+                ) {
+
+                    addConnector();
                 }
 
             }
@@ -955,14 +1096,44 @@ async function loadAgents() {
             );
 
 
+            // ----------------------------------------------
+            // HUMAN APPROVAL DETAILS
+            // ----------------------------------------------
+
+            html += `
+
+                <div class="agent-detail-row human-detail-row">
+
+                    <div>
+
+                        <strong>
+                            👤 Human Approval
+                        </strong>
+
+                        <br>
+
+                        <span>
+                            Human review is required
+                            before activating a response plan.
+                        </span>
+
+                    </div>
+
+                    <strong>
+                        Human-in-the-Loop
+                    </strong>
+
+                </div>
+
+            `;
+
+
             details.innerHTML =
                 html;
         }
 
 
-    }
-
-    catch (error) {
+    } catch (error) {
 
         console.error(
             "Failed to load agents:",
@@ -990,10 +1161,9 @@ async function loadAgents() {
 
             `;
         }
-
     }
-
 }
+
 
 // ======================================================
 // RESET
@@ -1070,7 +1240,9 @@ async function loadAll() {
 function connectButtons() {
 
     document
-        .getElementById("approve-plan")
+        .getElementById(
+            "approve-plan"
+        )
         ?.addEventListener(
             "click",
             approvePlan
@@ -1078,7 +1250,9 @@ function connectButtons() {
 
 
     document
-        .getElementById("reject-plan")
+        .getElementById(
+            "reject-plan"
+        )
         ?.addEventListener(
             "click",
             rejectPlan
@@ -1086,7 +1260,9 @@ function connectButtons() {
 
 
     document
-        .getElementById("replan")
+        .getElementById(
+            "replan"
+        )
         ?.addEventListener(
             "click",
             replan
@@ -1094,7 +1270,9 @@ function connectButtons() {
 
 
     document
-        .getElementById("ai-analysis-btn")
+        .getElementById(
+            "ai-analysis-btn"
+        )
         ?.addEventListener(
             "click",
             aiAnalysis
@@ -1102,7 +1280,9 @@ function connectButtons() {
 
 
     document
-        .getElementById("new-emergency")
+        .getElementById(
+            "new-emergency"
+        )
         ?.addEventListener(
             "click",
             newEmergency
@@ -1110,7 +1290,9 @@ function connectButtons() {
 
 
     document
-        .getElementById("resource-failure")
+        .getElementById(
+            "resource-failure"
+        )
         ?.addEventListener(
             "click",
             resourceFailure
@@ -1118,7 +1300,9 @@ function connectButtons() {
 
 
     document
-        .getElementById("increase-severity")
+        .getElementById(
+            "increase-severity"
+        )
         ?.addEventListener(
             "click",
             increaseSeverity
@@ -1126,7 +1310,9 @@ function connectButtons() {
 
 
     document
-        .getElementById("reset-simulation")
+        .getElementById(
+            "reset-simulation"
+        )
         ?.addEventListener(
             "click",
             resetSimulation
