@@ -529,16 +529,13 @@ def modify_plan(
 
         if assignment["incident_id"] == incident_id:
 
-            old_resource = \
-                assignment["resource_id"]
+            old_resource = assignment["resource_id"]
 
 
-            assignment["resource_id"] = \
-                resource_id
+            assignment["resource_id"] = resource_id
 
 
-            assignment["status"] = \
-                "Assigned"
+            assignment["status"] = "Assigned"
 
 
             assignment["reason"] = (
