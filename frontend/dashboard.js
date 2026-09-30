@@ -747,33 +747,20 @@ async function resetSimulation() {
 
 async function loadAll() {
 
-    try {
+    await loadIncidents();
 
-        await Promise.all([
+    await loadResources();
 
-            loadIncidents(),
+    await loadPlan();
 
-            loadResources(),
+    await loadHistory();
 
-            loadPlan(),
+    await loadMonitor();
 
-            loadHistory(),
+    await loadAuditLog();
 
-            loadMonitor(),
-
-            loadAuditLog()
-
-        ]);
-
-    } catch (error) {
-
-        console.error(
-            "Dashboard loading error:",
-            error
-        );
-    }
+    await loadAgents();
 }
-
 
 // ======================================================
 // CONNECT BUTTONS
@@ -876,3 +863,194 @@ document.addEventListener(
 
     }
 );
+
+// ============================================================
+// MULTI-AGENT STATUS
+// ============================================================
+
+async function loadAgents() {
+
+    try {
+
+        const response = await fetch(
+            `${API}/agents/status`
+        );
+
+        if (!response.ok) {
+
+            throw new Error(
+                `Agent API error: ${response.status}`
+            );
+        }
+
+        const data = await response.json();
+
+        const container =
+            document.getElementById(
+                "agents-container"
+            );
+
+        const details =
+            document.getElementById(
+                "agent-details"
+            );
+
+        if (!container) {
+            return;
+        }
+
+        container.innerHTML = "";
+
+        data.agents.forEach(agent => {
+
+            let icon = "🤖";
+
+            if (
+                agent.agent ===
+                "Assessment Agent"
+            ) {
+                icon = "🧠";
+            }
+
+            else if (
+                agent.agent ===
+                "Planning Agent"
+            ) {
+                icon = "📋";
+            }
+
+            else if (
+                agent.agent ===
+                "Security/SISO Agent"
+            ) {
+                icon = "🔐";
+            }
+
+            else if (
+                agent.agent ===
+                "Monitoring Agent"
+            ) {
+                icon = "👁️";
+            }
+
+            else if (
+                agent.agent ===
+                "Re-planning Agent"
+            ) {
+                icon = "🔄";
+            }
+
+
+            let statusClass = "agent-normal";
+
+            if (
+                agent.status === "Passed" ||
+                agent.status === "Completed"
+            ) {
+
+                statusClass = "agent-success";
+
+            }
+
+            else if (
+                agent.status === "Warning" ||
+                agent.status === "Change Detected"
+            ) {
+
+                statusClass = "agent-warning";
+
+            }
+
+            else if (
+                agent.status === "Triggered"
+            ) {
+
+                statusClass = "agent-triggered";
+
+            }
+
+
+            const card =
+                document.createElement("div");
+
+            card.className =
+                `agent-card ${statusClass}`;
+
+
+            card.innerHTML = `
+
+                <div class="agent-icon">
+                    ${icon}
+                </div>
+
+                <div class="agent-info">
+
+                    <h3>
+                        ${agent.agent}
+                    </h3>
+
+                    <p>
+                        ${agent.status}
+                    </p>
+
+                </div>
+
+            `;
+
+
+            container.appendChild(card);
+
+        });
+
+
+        // ====================================================
+        // AGENT DETAILS
+        // ====================================================
+
+        if (details) {
+
+            let html =
+                "<strong>Agent Activity</strong><br><br>";
+
+            data.agents.forEach(agent => {
+
+                html += `
+                    <div class="agent-detail-row">
+                        <strong>
+                            ${agent.agent}
+                        </strong>
+                        :
+                        ${agent.status}
+                    </div>
+                `;
+
+            });
+
+            details.innerHTML = html;
+        }
+
+
+    }
+
+    catch (error) {
+
+        console.error(
+            "Failed to load agents:",
+            error
+        );
+
+        const details =
+            document.getElementById(
+                "agent-details"
+            );
+
+        if (details) {
+
+            details.innerHTML =
+                "⚠️ Unable to load Multi-Agent status.";
+
+        }
+
+    }
+
+}
