@@ -637,17 +637,17 @@ def monitor():
 def new_emergency():
 
     # --------------------------------------------------------
-    # Check if I004 already exists
+    # Check if I005 already exists
     # --------------------------------------------------------
 
     for incident in incidents:
 
-        if incident["id"] == "I004":
+        if incident["id"] == "I005":
 
             return {
 
                 "message":
-                    "Chemical Factory Accident already exists",
+                    "Factory Fire Emergency already exists",
 
                 "incident":
                     incident
@@ -661,20 +661,21 @@ def new_emergency():
     new_incident = {
 
         "id":
-            "I004",
+            "I005",
 
         "type":
-            "Chemical Factory Accident",
+            "Factory Fire Emergency",
 
         "location":
-            "Zone D",
+            "Zone B",
 
         "severity":
             "Critical",
 
         "required_resources":
             [
-                "Ambulance"
+                "Ambulance",
+                "Rescue Team"
             ],
 
         "status":
@@ -700,8 +701,7 @@ def new_emergency():
             "Active"
         ]:
 
-            current_plan["status"] = \
-                "Outdated"
+            current_plan["status"] = "Outdated"
 
 
     # --------------------------------------------------------
@@ -709,10 +709,12 @@ def new_emergency():
     # --------------------------------------------------------
 
     add_audit_log(
+
         "New Emergency",
+
         (
             "New Critical emergency "
-            "I004 - Chemical Factory Accident "
+            "I005 - Factory Fire Emergency "
             "was detected."
         )
     )
@@ -729,7 +731,6 @@ def new_emergency():
         "plan_status":
             plan_history[-1]["status"]
     }
-
 
 # ============================================================
 # SIMULATION — RESOURCE FAILURE
