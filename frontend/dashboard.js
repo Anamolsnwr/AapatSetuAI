@@ -1,3 +1,4 @@
+```javascript
 const API = "https://aapatsetu-ai.onrender.com";
 
 let refreshTimer = null;
@@ -1585,11 +1586,19 @@ async function loadAgents() {
 
     try {
 
+        // --------------------------------------------------
+        // GET AGENT STATUS
+        // --------------------------------------------------
+
         const data =
             await getData(
                 `${API}/agents/status`
             );
 
+
+        // --------------------------------------------------
+        // GET CURRENT PLAN
+        // --------------------------------------------------
 
         const currentPlan =
             await getData(
@@ -1632,12 +1641,10 @@ async function loadAgents() {
 
                 icon: "🧠",
 
-                step: "1",
-
                 title: "Assess",
 
                 description:
-                    "Analyzes emergency incidents and identifies their requirements."
+                    "Assesses emergency incidents and their resource requirements."
             },
 
 
@@ -1645,12 +1652,10 @@ async function loadAgents() {
 
                 icon: "📋",
 
-                step: "2",
-
                 title: "Allocate",
 
                 description:
-                    "Allocates available resources according to incident priority."
+                    "Coordinates deterministic resource allocation based on incident priority."
             },
 
 
@@ -1658,12 +1663,21 @@ async function loadAgents() {
 
                 icon: "🔐",
 
-                step: "3",
-
                 title: "Validate",
 
                 description:
-                    "Validates incidents, resources and the response plan."
+                    "Validates incidents, resources and response plans for security issues."
+            },
+
+
+            "Human Review": {
+
+                icon: "👤",
+
+                title: "Human Review",
+
+                description:
+                    "Allows an emergency operator to approve, reject or modify a response plan."
             },
 
 
@@ -1671,12 +1685,10 @@ async function loadAgents() {
 
                 icon: "👁️",
 
-                step: "4",
-
                 title: "Monitor",
 
                 description:
-                    "Continuously checks for changes in the emergency situation."
+                    "Monitors emergencies, resources and severity changes."
             },
 
 
@@ -1684,12 +1696,21 @@ async function loadAgents() {
 
                 icon: "🔄",
 
-                step: "5",
-
                 title: "Re-plan",
 
                 description:
-                    "Generates a new response plan when a significant change occurs."
+                    "Triggers a new response plan when emergency conditions change."
+            },
+
+
+            "Command Coordinator": {
+
+                icon: "🎯",
+
+                title: "Coordinate",
+
+                description:
+                    "Coordinates the complete multi-agent emergency response workflow."
             }
 
         };
@@ -1705,7 +1726,8 @@ async function loadAgents() {
 
             if (
                 status === "Passed" ||
-                status === "Completed"
+                status === "Completed" ||
+                status === "Approved"
             ) {
 
                 return "agent-success";
@@ -1714,7 +1736,8 @@ async function loadAgents() {
 
             if (
                 status === "Warning" ||
-                status === "Change Detected"
+                status === "Change Detected" ||
+                status === "Plan Outdated"
             ) {
 
                 return "agent-warning";
@@ -1722,7 +1745,8 @@ async function loadAgents() {
 
 
             if (
-                status === "Triggered"
+                status === "Triggered" ||
+                status === "Re-planning Required"
             ) {
 
                 return "agent-triggered";
@@ -1734,6 +1758,23 @@ async function loadAgents() {
             ) {
 
                 return "agent-monitoring";
+            }
+
+
+            if (
+                status ===
+                "Waiting for Human Approval"
+            ) {
+
+                return "agent-warning";
+            }
+
+
+            if (
+                status === "Rejected"
+            ) {
+
+                return "agent-warning";
             }
 
 
@@ -1784,14 +1825,10 @@ async function loadAgents() {
 
                     icon: "🤖",
 
-                    step:
-                        String(
-                            index + 1
-                        ),
-
                     title: "Process",
 
                     description:
+                        agent.role ||
                         "Emergency response agent."
                 };
 
@@ -1815,9 +1852,7 @@ async function loadAgents() {
             card.innerHTML = `
 
                 <div class="agent-step">
-                    ${escapeHTML(
-                        info.step
-                    )}
+                    ${index + 1}
                 </div>
 
 
@@ -1844,6 +1879,7 @@ async function loadAgents() {
 
                     <p class="agent-description">
                         ${escapeHTML(
+                            agent.role ||
                             info.description
                         )}
                     </p>
@@ -1867,7 +1903,7 @@ async function loadAgents() {
 
 
         // ==================================================
-        // CREATE WORKFLOW
+        // CREATE AGENT WORKFLOW
         // ==================================================
 
         if (
@@ -1886,181 +1922,6 @@ async function loadAgents() {
 
 
                     if (
-                        agent.agent ===
-                        "Security/SISO Agent"
-                    ) {
-
-                        addConnector();
-
-
-                        const humanStage =
-                            document.createElement(
-                                "div"
-                            );
-
-
-                        humanStage.className =
-                            "human-approval-stage";
-
-
-                        const planStatus =
-                            currentPlan.status;
-
-
-                        let approvalIcon =
-                            "👤";
-
-
-                        let approvalStatus =
-                            "Pending Human Approval";
-
-
-                        let approvalClass =
-                            "pending";
-
-
-                        if (
-                            planStatus ===
-                            "Active"
-                        ) {
-
-                            approvalIcon =
-                                "✅";
-
-                            approvalStatus =
-                                "Plan Active";
-
-                            approvalClass =
-                                "active";
-
-                        } else if (
-                            planStatus ===
-                            "Rejected"
-                        ) {
-
-                            approvalIcon =
-                                "❌";
-
-                            approvalStatus =
-                                "Plan Rejected";
-
-                            approvalClass =
-                                "rejected";
-
-                        } else if (
-                            planStatus ===
-                            "Outdated"
-                        ) {
-
-                            approvalIcon =
-                                "⚠️";
-
-                            approvalStatus =
-                                "Plan Outdated";
-
-                            approvalClass =
-                                "outdated";
-                        }
-
-
-                        humanStage.innerHTML = `
-
-                            <div
-                                class="
-                                    human-approval-icon
-                                    ${approvalClass}
-                                "
-                            >
-                                ${approvalIcon}
-                            </div>
-
-
-                            <div
-                                class="
-                                    human-approval-content
-                                "
-                            >
-
-                                <div
-                                    class="
-                                        human-stage-title
-                                    "
-                                >
-                                    👤 Human Approval
-                                </div>
-
-
-                                <p>
-                                    Human review is required
-                                    before activating a response plan.
-                                </p>
-
-
-                                <div
-                                    class="
-                                        human-approval-plan
-                                    "
-                                >
-
-                                    <span>
-                                        Current Plan
-                                    </span>
-
-                                    <strong>
-                                        ${escapeHTML(
-                                            currentPlan.version
-                                        )}
-                                    </strong>
-
-                                </div>
-
-
-                                <div
-                                    class="
-                                        human-approval-plan
-                                    "
-                                >
-
-                                    <span>
-                                        Plan Status
-                                    </span>
-
-                                    <strong>
-                                        ${escapeHTML(
-                                            planStatus
-                                        )}
-                                    </strong>
-
-                                </div>
-
-
-                                <span
-                                    class="
-                                        human-approval-status
-                                        ${approvalClass}
-                                    "
-                                >
-                                    ${approvalStatus}
-                                </span>
-
-                            </div>
-
-                        `;
-
-
-                        container.appendChild(
-                            humanStage
-                        );
-
-
-                        addConnector();
-
-
-                        return;
-                    }
-
-
-                    if (
                         index <
                         data.agents.length - 1
                     ) {
@@ -2071,6 +1932,95 @@ async function loadAgents() {
                 }
             );
         }
+
+
+        // ==================================================
+        // COMMAND COORDINATOR SUMMARY
+        // ==================================================
+
+        const workflowSummary =
+            document.createElement(
+                "div"
+            );
+
+
+        workflowSummary.className =
+            "simulation-card";
+
+
+        workflowSummary.innerHTML = `
+
+            <h3>
+                🎯 Command Coordinator
+            </h3>
+
+
+            <p>
+
+                <strong>
+                    Workflow Status:
+                </strong>
+
+                ${escapeHTML(
+                    data.workflow_status ||
+                    "Unknown"
+                )}
+
+            </p>
+
+
+            <p>
+
+                <strong>
+                    Plan Version:
+                </strong>
+
+                ${escapeHTML(
+                    data.plan_version ||
+                    currentPlan.version ||
+                    "Unknown"
+                )}
+
+            </p>
+
+
+            <p>
+
+                <strong>
+                    Plan Status:
+                </strong>
+
+                ${escapeHTML(
+                    data.plan_status ||
+                    currentPlan.status ||
+                    "Unknown"
+                )}
+
+            </p>
+
+
+            <p>
+
+                <strong>
+                    Workflow:
+                </strong>
+
+                ${escapeHTML(
+                    Array.isArray(data.workflow)
+                        ? data.workflow.join(
+                            " → "
+                        )
+                        : "Not available"
+                )}
+
+            </p>
+
+        `;
+
+
+        container.appendChild(
+            workflowSummary
+        );
 
 
         // ==================================================
@@ -2091,12 +2041,48 @@ async function loadAgents() {
                 <p class="agent-details-subtitle">
 
                     Current status of the emergency
-                    response workflow.
+                    response coordination workflow.
 
                 </p>
 
+
+                <div
+                    class="
+                        agent-detail-row
+                    "
+                >
+
+                    <div>
+
+                        <strong>
+                            🎯 Workflow Status
+                        </strong>
+
+                        <br>
+
+                        <span>
+                            Command Coordinator status
+                            for the current response workflow.
+                        </span>
+
+                    </div>
+
+
+                    <strong>
+                        ${escapeHTML(
+                            data.workflow_status ||
+                            "Unknown"
+                        )}
+                    </strong>
+
+                </div>
+
             `;
 
+
+            // ------------------------------------------------
+            // AGENT DETAILS
+            // ------------------------------------------------
 
             if (
                 Array.isArray(
@@ -2143,6 +2129,7 @@ async function loadAgents() {
                                     <span>
 
                                         ${escapeHTML(
+                                            agent.role ||
                                             info.description ||
                                             ""
                                         )}
@@ -2168,40 +2155,46 @@ async function loadAgents() {
             }
 
 
-            html += `
+            // ------------------------------------------------
+            // WORKFLOW
+            // ------------------------------------------------
 
-                <div
-                    class="
-                        agent-detail-row
-                        human-detail-row
-                    "
-                >
+            if (
+                Array.isArray(
+                    data.workflow
+                )
+            ) {
 
-                    <div>
+                html += `
 
-                        <strong>
-                            👤 Human Approval
-                        </strong>
+                    <div
+                        class="
+                            agent-detail-row
+                        "
+                    >
 
-                        <br>
+                        <div>
 
-                        <span>
-                            Human review is required
-                            before activating a response plan.
-                        </span>
+                            <strong>
+                                🔄 Workflow
+                            </strong>
+
+                            <br>
+
+                            <span>
+                                ${escapeHTML(
+                                    data.workflow.join(
+                                        " → "
+                                    )
+                                )}
+                            </span>
+
+                        </div>
 
                     </div>
 
-
-                    <strong>
-                        ${escapeHTML(
-                            currentPlan.status
-                        )}
-                    </strong>
-
-                </div>
-
-            `;
+                `;
+            }
 
 
             details.innerHTML =
