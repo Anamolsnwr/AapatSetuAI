@@ -1,0 +1,32 @@
+[
+    {
+        "id": "A1",
+        "type": "Ambulance",
+        "location": "Zone A",
+        "status": "available"
+    },
+    {
+        "id": "A2",
+        "type": "Ambulance",
+        "location": "Zone C",
+        "status": "available"
+    },
+    {
+        "id": "A3",
+        "type": "Ambulance",
+        "location": "Zone D",
+        "status": "available"
+    },
+    {
+        "id": "R1",
+        "type": "Rescue Team",
+        "location": "Zone B",
+        "status": "available"
+    },
+    {
+        "id": "R2",
+        "type": "Rescue Team",
+        "location": "Zone D",
+        "status": "available"
+    }
+]

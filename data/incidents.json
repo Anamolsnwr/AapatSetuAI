@@ -1,0 +1,26 @@
+[
+    {
+        "id": "I001",
+        "type": "Road Accident",
+        "location": "Zone A",
+        "severity": "High",
+        "required_resources": ["Ambulance"],
+        "status": "Active"
+    },
+    {
+        "id": "I002",
+        "type": "Building Evacuation",
+        "location": "Zone B",
+        "severity": "Critical",
+        "required_resources": ["Rescue Team", "Ambulance"],
+        "status": "Active"
+    },
+    {
+        "id": "I003",
+        "type": "Medical Emergency",
+        "location": "Zone C",
+        "severity": "Medium",
+        "required_resources": ["Ambulance"],
+        "status": "Active"
+    }
+]
