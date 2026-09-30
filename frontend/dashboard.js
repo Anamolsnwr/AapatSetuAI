@@ -7,15 +7,20 @@ const API = "https://aapatsetu-ai.onrender.com";
 
 async function getData(url, options = {}) {
 
-    const response = await fetch(url, options);
+    const response = await fetch(
+        url,
+        options
+    );
 
     if (!response.ok) {
 
-        let message = `HTTP ${response.status}`;
+        let message =
+            `HTTP ${response.status}`;
 
         try {
 
-            const error = await response.json();
+            const error =
+                await response.json();
 
             message =
                 error.detail ||
@@ -34,19 +39,106 @@ async function getData(url, options = {}) {
 
 
 // ======================================================
+// SYSTEM STATUS
+// ======================================================
+
+async function checkSystemStatus() {
+
+    const statusText =
+        document.getElementById(
+            "system-status-text"
+        );
+
+    const statusDot =
+        document.getElementById(
+            "system-status-dot"
+        );
+
+    const statusContainer =
+        document.getElementById(
+            "system-status"
+        );
+
+    if (!statusText || !statusDot) {
+        return;
+    }
+
+    try {
+
+        const data =
+            await getData(API);
+
+        if (
+            data &&
+            data.status === "running"
+        ) {
+
+            statusText.textContent =
+                "System Online";
+
+            statusDot.textContent =
+                "";
+
+            statusDot.className =
+                "status-dot online";
+
+            if (statusContainer) {
+
+                statusContainer.title =
+                    "AapatSetu AI backend is connected";
+            }
+
+        } else {
+
+            statusText.textContent =
+                "System Warning";
+
+            statusDot.className =
+                "status-dot warning";
+        }
+
+    } catch (error) {
+
+        console.error(
+            "System status error:",
+            error
+        );
+
+        statusText.textContent =
+            "System Offline";
+
+        statusDot.className =
+            "status-dot offline";
+
+        if (statusContainer) {
+
+            statusContainer.title =
+                "Backend server is unavailable";
+        }
+    }
+}
+
+
+// ======================================================
 // INCIDENTS
 // ======================================================
 
 async function loadIncidents() {
 
     const incidents =
-        await getData(`${API}/incidents`);
+        await getData(
+            `${API}/incidents`
+        );
 
     const count =
-        document.getElementById("incident-count");
+        document.getElementById(
+            "incident-count"
+        );
 
     if (count) {
-        count.textContent = incidents.length;
+
+        count.textContent =
+            incidents.length;
     }
 
     const container =
@@ -60,51 +152,85 @@ async function loadIncidents() {
 
     container.innerHTML = "";
 
-    incidents.forEach(incident => {
+    incidents.forEach(
+        incident => {
 
-        container.innerHTML += `
+            let severityIcon =
+                "🟢";
 
-            <div class="simulation-card">
+            if (
+                incident.severity ===
+                "Critical"
+            ) {
 
-                <h3>
-                    🚨 ${incident.id}
-                </h3>
+                severityIcon =
+                    "🔴";
 
-                <p>
-                    <strong>Type:</strong>
-                    ${incident.type}
-                </p>
+            } else if (
+                incident.severity ===
+                "High"
+            ) {
 
-                <p>
-                    <strong>Location:</strong>
-                    ${incident.location}
-                </p>
+                severityIcon =
+                    "🟠";
 
-                <p>
-                    <strong>Severity:</strong>
-                    ${incident.severity}
-                </p>
+            } else if (
+                incident.severity ===
+                "Medium"
+            ) {
 
-                <p>
-                    <strong>Resources:</strong>
-                    ${
-                        Array.isArray(
-                            incident.required_resources
-                        )
-                            ? incident.required_resources.join(", ")
-                            : "Not specified"
-                    }
-                </p>
+                severityIcon =
+                    "🟡";
+            }
 
-                <p>
-                    <strong>Status:</strong>
-                    ${incident.status}
-                </p>
 
-            </div>
+            container.innerHTML += `
 
-        `;
-    });
+                <div class="simulation-card">
+
+                    <h3>
+                        🚨 ${incident.id}
+                    </h3>
+
+                    <p>
+                        <strong>Type:</strong>
+                        ${incident.type}
+                    </p>
+
+                    <p>
+                        <strong>Location:</strong>
+                        ${incident.location}
+                    </p>
+
+                    <p>
+                        <strong>Severity:</strong>
+                        ${severityIcon}
+                        ${incident.severity}
+                    </p>
+
+                    <p>
+                        <strong>Resources:</strong>
+                        ${
+                            Array.isArray(
+                                incident.required_resources
+                            )
+                                ? incident.required_resources.join(
+                                    ", "
+                                )
+                                : "Not specified"
+                        }
+                    </p>
+
+                    <p>
+                        <strong>Status:</strong>
+                        ${incident.status}
+                    </p>
+
+                </div>
+
+            `;
+        }
+    );
 }
 
 
@@ -115,13 +241,19 @@ async function loadIncidents() {
 async function loadResources() {
 
     const resources =
-        await getData(`${API}/resources`);
+        await getData(
+            `${API}/resources`
+        );
 
     const count =
-        document.getElementById("resource-count");
+        document.getElementById(
+            "resource-count"
+        );
 
     if (count) {
-        count.textContent = resources.length;
+
+        count.textContent =
+            resources.length;
     }
 
     const container =
@@ -135,40 +267,48 @@ async function loadResources() {
 
     container.innerHTML = "";
 
-    resources.forEach(resource => {
+    resources.forEach(
+        resource => {
 
-        const status =
-            resource.status === "available"
-                ? "🟢 Available"
-                : "🔴 Unavailable";
+            const available =
+                resource.status ===
+                "available";
 
-        container.innerHTML += `
 
-            <div class="simulation-card">
+            const status =
+                available
+                    ? "🟢 Available"
+                    : "🔴 Unavailable";
 
-                <h3>
-                    🚑 ${resource.id}
-                </h3>
 
-                <p>
-                    <strong>Type:</strong>
-                    ${resource.type}
-                </p>
+            container.innerHTML += `
 
-                <p>
-                    <strong>Location:</strong>
-                    ${resource.location}
-                </p>
+                <div class="simulation-card">
 
-                <p>
-                    <strong>Status:</strong>
-                    ${status}
-                </p>
+                    <h3>
+                        🚑 ${resource.id}
+                    </h3>
 
-            </div>
+                    <p>
+                        <strong>Type:</strong>
+                        ${resource.type}
+                    </p>
 
-        `;
-    });
+                    <p>
+                        <strong>Location:</strong>
+                        ${resource.location}
+                    </p>
+
+                    <p>
+                        <strong>Status:</strong>
+                        ${status}
+                    </p>
+
+                </div>
+
+            `;
+        }
+    );
 }
 
 
@@ -179,7 +319,9 @@ async function loadResources() {
 async function loadPlan() {
 
     const plan =
-        await getData(`${API}/plan`);
+        await getData(
+            `${API}/plan`
+        );
 
     const version =
         document.getElementById(
@@ -196,94 +338,123 @@ async function loadPlan() {
             "plan-container"
         );
 
+
     if (version) {
+
         version.textContent =
             plan.version;
     }
 
+
     if (status) {
+
         status.textContent =
             plan.status;
     }
 
+
     if (!container) {
         return plan;
     }
+
 
     container.innerHTML = `
 
         <div class="info-box">
 
             <strong>
-                ${plan.version}
+                📋 ${plan.version}
             </strong>
 
-            <br>
+            <br><br>
 
-            Status:
+            <strong>
+                Status:
+            </strong>
+
             ${plan.status}
 
-            <br>
+            <br><br>
 
-            Reason:
-            ${plan.change_reason || "No reason provided"}
+            <strong>
+                Reason:
+            </strong>
+
+            ${plan.change_reason ||
+                "No reason provided"}
 
         </div>
 
     `;
 
-    if (!Array.isArray(plan.plan)) {
+
+    if (
+        !Array.isArray(plan.plan)
+    ) {
+
         return plan;
     }
 
-    plan.plan.forEach(item => {
 
-        const resource =
-            item.resource_id ||
-            "⚠️ No Resource";
+    plan.plan.forEach(
+        item => {
 
-        container.innerHTML += `
+            const resource =
+                item.resource_id ||
+                "⚠️ No Resource";
 
-            <div class="simulation-card">
 
-                <h3>
-                    ${resource}
-                </h3>
+            const assignmentStatus =
+                item.status ===
+                "Assigned"
+                    ? "🟢 Assigned"
+                    : "⚠️ Human Attention Required";
 
-                <p>
-                    <strong>Incident:</strong>
-                    ${item.incident_id}
-                </p>
 
-                <p>
-                    <strong>Type:</strong>
-                    ${item.incident_type}
-                </p>
+            container.innerHTML += `
 
-                <p>
-                    <strong>Location:</strong>
-                    ${item.location}
-                </p>
+                <div class="simulation-card">
 
-                <p>
-                    <strong>Severity:</strong>
-                    ${item.severity}
-                </p>
+                    <h3>
+                        ${resource}
+                    </h3>
 
-                <p>
-                    <strong>Status:</strong>
-                    ${item.status}
-                </p>
+                    <p>
+                        <strong>Incident:</strong>
+                        ${item.incident_id}
+                    </p>
 
-                <p>
-                    <strong>Reason:</strong>
-                    ${item.reason}
-                </p>
+                    <p>
+                        <strong>Type:</strong>
+                        ${item.incident_type}
+                    </p>
 
-            </div>
+                    <p>
+                        <strong>Location:</strong>
+                        ${item.location}
+                    </p>
 
-        `;
-    });
+                    <p>
+                        <strong>Severity:</strong>
+                        ${item.severity}
+                    </p>
+
+                    <p>
+                        <strong>Status:</strong>
+                        ${assignmentStatus}
+                    </p>
+
+                    <p>
+                        <strong>Reason:</strong>
+                        ${item.reason}
+                    </p>
+
+                </div>
+
+            `;
+        }
+    );
+
 
     return plan;
 }
@@ -335,6 +506,7 @@ async function rejectPlan() {
     if (!confirmed) {
         return;
     }
+
 
     try {
 
@@ -409,8 +581,10 @@ async function aiAnalysis() {
         return;
     }
 
+
     box.innerHTML =
         "🤖 AI is analyzing the emergency situation...";
+
 
     try {
 
@@ -418,6 +592,7 @@ async function aiAnalysis() {
             await getData(
                 `${API}/ai/explain-plan`
             );
+
 
         if (
             !data.ai_analysis ||
@@ -429,6 +604,7 @@ async function aiAnalysis() {
 
             return;
         }
+
 
         box.innerHTML = `
 
@@ -452,6 +628,7 @@ async function aiAnalysis() {
             "AI error:",
             error
         );
+
 
         box.innerHTML = `
 
@@ -589,14 +766,17 @@ async function loadMonitor() {
             `${API}/monitor`
         );
 
+
     const container =
         document.getElementById(
             "monitor-container"
         );
 
+
     if (!container) {
         return;
     }
+
 
     if (!data.changes_detected) {
 
@@ -615,6 +795,7 @@ async function loadMonitor() {
         return;
     }
 
+
     container.innerHTML = `
 
         <strong>
@@ -628,36 +809,45 @@ async function loadMonitor() {
 
     `;
 
-    if (!Array.isArray(data.changes)) {
+
+    if (
+        !Array.isArray(data.changes)
+    ) {
+
         return;
     }
 
-    data.changes.forEach(change => {
 
-        container.innerHTML += `
+    data.changes.forEach(
+        change => {
 
-            <div class="simulation-card">
+            container.innerHTML += `
 
-                <h3>
-                    ${change.type}
-                </h3>
+                <div class="simulation-card">
 
-                <p>
-                    ${change.reason || ""}
-                </p>
+                    <h3>
+                        ${change.type}
+                    </h3>
 
-                <p>
-                    <strong>
-                        Action:
-                    </strong>
+                    <p>
+                        ${change.reason || ""}
+                    </p>
 
-                    ${change.action || ""}
-                </p>
+                    <p>
 
-            </div>
+                        <strong>
+                            Action:
+                        </strong>
 
-        `;
-    });
+                        ${change.action || ""}
+
+                    </p>
+
+                </div>
+
+            `;
+        }
+    );
 }
 
 
@@ -672,45 +862,55 @@ async function loadHistory() {
             `${API}/plan-history`
         );
 
+
     const container =
         document.getElementById(
             "history-container"
         );
 
+
     if (!container) {
         return;
     }
 
+
     container.innerHTML = "";
 
-    if (!Array.isArray(history)) {
+
+    if (
+        !Array.isArray(history)
+    ) {
+
         return;
     }
 
-    history.forEach(plan => {
 
-        container.innerHTML += `
+    history.forEach(
+        plan => {
 
-            <div class="simulation-card">
+            container.innerHTML += `
 
-                <h3>
-                    📋 ${plan.version}
-                </h3>
+                <div class="simulation-card">
 
-                <p>
-                    <strong>Status:</strong>
-                    ${plan.status}
-                </p>
+                    <h3>
+                        📋 ${plan.version}
+                    </h3>
 
-                <p>
-                    <strong>Reason:</strong>
-                    ${plan.change_reason}
-                </p>
+                    <p>
+                        <strong>Status:</strong>
+                        ${plan.status}
+                    </p>
 
-            </div>
+                    <p>
+                        <strong>Reason:</strong>
+                        ${plan.change_reason}
+                    </p>
 
-        `;
-    });
+                </div>
+
+            `;
+        }
+    );
 }
 
 
@@ -725,51 +925,58 @@ async function loadAuditLog() {
             `${API}/audit-log`
         );
 
+
     const container =
         document.getElementById(
             "audit-container"
         );
 
+
     if (!container) {
         return;
     }
 
+
     container.innerHTML = "";
+
 
     const logs =
         data.audit_log || [];
 
+
     logs
         .slice()
         .reverse()
-        .forEach(log => {
+        .forEach(
+            log => {
 
-            container.innerHTML += `
+                container.innerHTML += `
 
-                <div class="simulation-card">
+                    <div class="simulation-card">
 
-                    <h3>
-                        🔐 ${log.action}
-                    </h3>
+                        <h3>
+                            🔐 ${log.action}
+                        </h3>
 
-                    <p>
+                        <p>
 
-                        <strong>
-                            Time:
-                        </strong>
+                            <strong>
+                                Time:
+                            </strong>
 
-                        ${log.timestamp}
+                            ${log.timestamp}
 
-                    </p>
+                        </p>
 
-                    <p>
-                        ${log.details}
-                    </p>
+                        <p>
+                            ${log.details}
+                        </p>
 
-                </div>
+                    </div>
 
-            `;
-        });
+                `;
+            }
+        );
 }
 
 
@@ -786,20 +993,24 @@ async function loadAgents() {
                 `${API}/agents/status`
             );
 
+
         const currentPlan =
             await getData(
                 `${API}/plan`
             );
+
 
         const container =
             document.getElementById(
                 "agents-container"
             );
 
+
         const details =
             document.getElementById(
                 "agent-details"
             );
+
 
         if (!container) {
 
@@ -809,6 +1020,7 @@ async function loadAgents() {
 
             return;
         }
+
 
         container.innerHTML = "";
 
@@ -829,6 +1041,7 @@ async function loadAgents() {
                     "Analyzes emergency incidents and identifies their requirements."
             },
 
+
             "Planning Agent": {
 
                 icon: "📋",
@@ -838,6 +1051,7 @@ async function loadAgents() {
                 description:
                     "Allocates available resources according to incident priority."
             },
+
 
             "Security/SISO Agent": {
 
@@ -849,6 +1063,7 @@ async function loadAgents() {
                     "Validates incidents, resources and the response plan."
             },
 
+
             "Monitoring Agent": {
 
                 icon: "👁️",
@@ -858,6 +1073,7 @@ async function loadAgents() {
                 description:
                     "Continuously checks for changes in the emergency situation."
             },
+
 
             "Re-planning Agent": {
 
@@ -883,11 +1099,14 @@ async function loadAgents() {
                     "div"
                 );
 
+
             connector.className =
                 "agent-connector";
 
+
             connector.innerHTML =
                 "↓";
+
 
             container.appendChild(
                 connector
@@ -926,26 +1145,23 @@ async function loadAgents() {
 
                 statusClass =
                     "agent-success";
-            }
 
-            else if (
+            } else if (
                 agent.status === "Warning" ||
                 agent.status === "Change Detected"
             ) {
 
                 statusClass =
                     "agent-warning";
-            }
 
-            else if (
+            } else if (
                 agent.status === "Triggered"
             ) {
 
                 statusClass =
                     "agent-triggered";
-            }
 
-            else if (
+            } else if (
                 agent.status === "Monitoring"
             ) {
 
@@ -958,6 +1174,7 @@ async function loadAgents() {
                 document.createElement(
                     "div"
                 );
+
 
             card.className =
                 `agent-card ${statusClass}`;
@@ -1005,7 +1222,9 @@ async function loadAgents() {
         data.agents.forEach(
             (agent, index) => {
 
-                createAgentCard(agent);
+                createAgentCard(
+                    agent
+                );
 
 
                 // ------------------------------------------
@@ -1025,17 +1244,18 @@ async function loadAgents() {
                             "div"
                         );
 
+
                     humanStage.className =
                         "human-approval-stage";
 
 
-                    // Determine approval state
                     const planStatus =
                         currentPlan.status;
 
 
                     let approvalIcon =
                         "👤";
+
 
                     let approvalStatus =
                         "Human-in-the-Loop";
@@ -1051,9 +1271,8 @@ async function loadAgents() {
 
                         approvalStatus =
                             "Pending Human Approval";
-                    }
 
-                    else if (
+                    } else if (
                         planStatus ===
                         "Active"
                     ) {
@@ -1063,9 +1282,8 @@ async function loadAgents() {
 
                         approvalStatus =
                             "Plan Active";
-                    }
 
-                    else if (
+                    } else if (
                         planStatus ===
                         "Rejected"
                     ) {
@@ -1075,9 +1293,8 @@ async function loadAgents() {
 
                         approvalStatus =
                             "Plan Rejected";
-                    }
 
-                    else if (
+                    } else if (
                         planStatus ===
                         "Outdated"
                     ) {
@@ -1154,9 +1371,7 @@ async function loadAgents() {
                         addConnector();
                     }
 
-                }
-
-                else if (
+                } else if (
                     index <
                     data.agents.length - 1
                 ) {
@@ -1304,9 +1519,11 @@ async function resetSimulation() {
             "Reset the complete simulation?"
         );
 
+
     if (!confirmed) {
         return;
     }
+
 
     try {
 
@@ -1318,7 +1535,9 @@ async function resetSimulation() {
                 }
             );
 
+
         alert(data.message);
+
 
         await loadAll();
 
@@ -1342,6 +1561,11 @@ async function loadAll() {
 
     try {
 
+        // Check backend first
+        await checkSystemStatus();
+
+
+        // Load dashboard data
         await loadIncidents();
 
         await loadResources();
@@ -1362,6 +1586,32 @@ async function loadAll() {
             "Dashboard loading error:",
             error
         );
+
+
+        const statusText =
+            document.getElementById(
+                "system-status-text"
+            );
+
+
+        const statusDot =
+            document.getElementById(
+                "system-status-dot"
+            );
+
+
+        if (statusText) {
+
+            statusText.textContent =
+                "System Offline";
+        }
+
+
+        if (statusDot) {
+
+            statusDot.className =
+                "status-dot offline";
+        }
     }
 }
 
@@ -1377,35 +1627,42 @@ function connectButtons() {
             "approve-plan"
         );
 
+
     const rejectButton =
         document.getElementById(
             "reject-plan"
         );
+
 
     const replanButton =
         document.getElementById(
             "replan"
         );
 
+
     const aiButton =
         document.getElementById(
             "ai-analysis-btn"
         );
+
 
     const newEmergencyButton =
         document.getElementById(
             "new-emergency"
         );
 
+
     const resourceFailureButton =
         document.getElementById(
             "resource-failure"
         );
 
+
     const severityButton =
         document.getElementById(
             "increase-severity"
         );
+
 
     const resetButton =
         document.getElementById(
@@ -1524,6 +1781,37 @@ function connectButtons() {
 
 
 // ======================================================
+// AUTOMATIC REFRESH
+// ======================================================
+
+function startAutoRefresh() {
+
+    setInterval(
+        async function () {
+
+            try {
+
+                await loadAll();
+
+                console.log(
+                    "Dashboard automatically refreshed."
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Automatic refresh failed:",
+                    error
+                );
+            }
+
+        },
+        15000
+    );
+}
+
+
+// ======================================================
 // START APPLICATION
 // ======================================================
 
@@ -1535,9 +1823,15 @@ document.addEventListener(
             "AapatSetu AI dashboard started."
         );
 
+
         connectButtons();
 
+
         await loadAll();
+
+
+        startAutoRefresh();
+
 
         console.log(
             "Dashboard data loaded."
