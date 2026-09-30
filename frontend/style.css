@@ -965,3 +965,133 @@ button.danger {
     }
 
 }
+
+/* =========================================================
+   HUMAN APPROVAL STAGE
+   ========================================================= */
+
+.human-approval-stage {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 16px;
+
+    padding: 18px;
+
+    border: 2px dashed #64748b;
+
+    border-radius: 12px;
+
+    background: #f8fafc;
+}
+
+
+.human-approval-icon {
+
+    width: 48px;
+    height: 48px;
+
+    min-width: 48px;
+
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 12px;
+
+    background: #e2e8f0;
+
+    font-size: 24px;
+}
+
+
+.human-approval-content {
+
+    flex: 1;
+
+    min-width: 0;
+}
+
+
+.human-approval-content strong {
+
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #0f172a;
+
+    font-size: 16px;
+}
+
+
+.human-approval-content p {
+
+    margin: 0 0 9px 0;
+
+    color: #64748b;
+
+    font-size: 13px;
+
+    line-height: 1.5;
+}
+
+
+.human-approval-status {
+
+    display: inline-block;
+
+    padding: 5px 10px;
+
+    border-radius: 20px;
+
+    background: #e2e8f0;
+
+    color: #334155;
+
+    font-size: 12px;
+
+    font-weight: 700;
+}
+
+
+/* =========================================================
+   HUMAN APPROVAL MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    .human-approval-stage {
+
+        padding: 14px;
+
+        gap: 10px;
+    }
+
+
+    .human-approval-icon {
+
+        width: 40px;
+        height: 40px;
+
+        min-width: 40px;
+
+        font-size: 20px;
+    }
+
+
+    .human-approval-content strong {
+
+        font-size: 14px;
+    }
+
+
+    .human-approval-content p {
+
+        font-size: 12px;
+    }
+
+}
