@@ -423,8 +423,7 @@ async function loadPlan() {
         }
 
 
-        const currentPlan =
-            data.plan;
+        const currentPlan = data;
 
 
         if (!currentPlan) {
