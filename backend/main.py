@@ -315,10 +315,7 @@ def get_agent_status():
 
     assessed = assessment_agent(incidents)
 
-    current_plan = create_plan(
-        incidents,
-        resources
-    )
+    current_plan = create_plan()
 
     planning = planning_agent(
         current_plan["plan"]
@@ -347,7 +344,6 @@ def get_agent_status():
             monitoring
         ]
     }
-
 # ============================================================
 # REJECT PLAN
 # ============================================================
