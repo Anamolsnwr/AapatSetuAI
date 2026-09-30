@@ -705,130 +705,198 @@ async function loadAgents() {
 
 
         // ==================================================
-        // CREATE AGENT CARDS
+        // AGENT INFORMATION
         // ==================================================
 
-        data.agents.forEach(agent => {
+        const agentInfo = {
 
-            let icon = "🤖";
+            "Assessment Agent": {
+                icon: "🧠",
+                step: "1",
+                description:
+                    "Analyzes emergency incidents and identifies their requirements."
+            },
 
-            if (
-                agent.agent ===
-                "Assessment Agent"
-            ) {
+            "Planning Agent": {
+                icon: "📋",
+                step: "2",
+                description:
+                    "Allocates available resources according to incident priority."
+            },
 
-                icon = "🧠";
+            "Security/SISO Agent": {
+                icon: "🔐",
+                step: "3",
+                description:
+                    "Validates incidents, resources and the response plan."
+            },
 
-            }
-            else if (
-                agent.agent ===
-                "Planning Agent"
-            ) {
+            "Monitoring Agent": {
+                icon: "👁️",
+                step: "4",
+                description:
+                    "Continuously checks for changes in the emergency situation."
+            },
 
-                icon = "📋";
-
-            }
-            else if (
-                agent.agent ===
-                "Security/SISO Agent"
-            ) {
-
-                icon = "🔐";
-
-            }
-            else if (
-                agent.agent ===
-                "Monitoring Agent"
-            ) {
-
-                icon = "👁️";
-
-            }
-            else if (
-                agent.agent ===
-                "Re-planning Agent"
-            ) {
-
-                icon = "🔄";
+            "Re-planning Agent": {
+                icon: "🔄",
+                step: "5",
+                description:
+                    "Generates a new response plan when a significant change occurs."
             }
 
+        };
 
-            // ==============================================
-            // STATUS CLASS
-            // ==============================================
 
-            let statusClass =
-                "agent-normal";
+        // ==================================================
+        // CREATE AGENT WORKFLOW
+        // ==================================================
 
-            if (
-                agent.status ===
-                    "Passed" ||
-                agent.status ===
-                    "Completed"
-            ) {
+        data.agents.forEach(
+            (agent, index) => {
 
-                statusClass =
-                    "agent-success";
+                const info =
+                    agentInfo[
+                        agent.agent
+                    ] || {
 
-            }
-            else if (
-                agent.status ===
-                    "Warning" ||
-                agent.status ===
-                    "Change Detected"
-            ) {
+                        icon: "🤖",
+                        step:
+                            index + 1,
 
-                statusClass =
-                    "agent-warning";
+                        description:
+                            "Emergency response agent."
+                    };
 
-            }
-            else if (
-                agent.status ===
+
+                // ==========================================
+                // STATUS CLASS
+                // ==========================================
+
+                let statusClass =
+                    "agent-normal";
+
+
+                if (
+                    agent.status ===
+                        "Passed" ||
+
+                    agent.status ===
+                        "Completed"
+                ) {
+
+                    statusClass =
+                        "agent-success";
+
+                }
+
+                else if (
+                    agent.status ===
+                        "Warning" ||
+
+                    agent.status ===
+                        "Change Detected"
+                ) {
+
+                    statusClass =
+                        "agent-warning";
+
+                }
+
+                else if (
+                    agent.status ===
                     "Triggered"
-            ) {
+                ) {
 
-                statusClass =
-                    "agent-triggered";
-            }
+                    statusClass =
+                        "agent-triggered";
+
+                }
+
+                else if (
+                    agent.status ===
+                    "Monitoring"
+                ) {
+
+                    statusClass =
+                        "agent-monitoring";
+                }
 
 
-            // ==============================================
-            // CARD
-            // ==============================================
+                // ==========================================
+                // CREATE CARD
+                // ==========================================
 
-            const card =
-                document.createElement(
-                    "div"
+                const card =
+                    document.createElement(
+                        "div"
+                    );
+
+                card.className =
+                    `agent-card ${statusClass}`;
+
+
+                card.innerHTML = `
+
+                    <div class="agent-step">
+                        ${info.step}
+                    </div>
+
+                    <div class="agent-icon">
+                        ${info.icon}
+                    </div>
+
+                    <div class="agent-info">
+
+                        <h3>
+                            ${agent.agent}
+                        </h3>
+
+                        <p class="agent-description">
+                            ${info.description}
+                        </p>
+
+                        <span class="agent-status">
+                            ${agent.status}
+                        </span>
+
+                    </div>
+
+                `;
+
+
+                container.appendChild(
+                    card
                 );
 
-            card.className =
-                `agent-card ${statusClass}`;
 
-            card.innerHTML = `
+                // ==========================================
+                // CONNECTOR
+                // ==========================================
 
-                <div class="agent-icon">
-                    ${icon}
-                </div>
+                if (
+                    index <
+                    data.agents.length - 1
+                ) {
 
-                <div class="agent-info">
+                    const connector =
+                        document.createElement(
+                            "div"
+                        );
 
-                    <h3>
-                        ${agent.agent}
-                    </h3>
+                    connector.className =
+                        "agent-connector";
 
-                    <p>
-                        ${agent.status}
-                    </p>
+                    connector.innerHTML =
+                        "↓";
 
-                </div>
+                    container.appendChild(
+                        connector
+                    );
+                }
 
-            `;
-
-            container.appendChild(
-                card
-            );
-
-        });
+            }
+        );
 
 
         // ==================================================
@@ -837,43 +905,76 @@ async function loadAgents() {
 
         if (details) {
 
-            let html =
-                "<strong>Agent Activity</strong><br><br>";
+            let html = `
 
-            data.agents.forEach(agent => {
+                <strong>
+                    🤖 Multi-Agent Activity
+                </strong>
 
-                html += `
+                <br><br>
 
-                    <div class="agent-detail-row">
+            `;
 
-                        <strong>
-                            ${agent.agent}
-                        </strong>
 
-                        :
-                        ${agent.status}
+            data.agents.forEach(
+                agent => {
 
-                    </div>
+                    const info =
+                        agentInfo[
+                            agent.agent
+                        ] || {};
 
-                `;
-            });
+
+                    html += `
+
+                        <div class="agent-detail-row">
+
+                            <div>
+
+                                <strong>
+                                    ${info.icon || "🤖"}
+                                    ${agent.agent}
+                                </strong>
+
+                                <br>
+
+                                <span>
+                                    ${info.description || ""}
+                                </span>
+
+                            </div>
+
+                            <strong>
+                                ${agent.status}
+                            </strong>
+
+                        </div>
+
+                    `;
+                }
+            );
+
 
             details.innerHTML =
                 html;
         }
 
 
-    } catch (error) {
+    }
+
+    catch (error) {
 
         console.error(
             "Failed to load agents:",
             error
         );
 
+
         const details =
             document.getElementById(
                 "agent-details"
             );
+
 
         if (details) {
 
@@ -889,9 +990,10 @@ async function loadAgents() {
 
             `;
         }
-    }
-}
 
+    }
+
+}
 
 // ======================================================
 // RESET
